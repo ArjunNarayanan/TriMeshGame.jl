@@ -3,6 +3,9 @@ uuid = "6fe937b6-a686-4c05-aa43-439f88a41e40"
 authors = ["Arjun <arjun.narayanan91@gmail.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
 [compat]
 julia = "1.7"
 
