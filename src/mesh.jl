@@ -138,6 +138,22 @@ function degree(m::Mesh, t::Triangle, i)
     return degree(m, vertex(t, i))
 end
 
+function increment_degree(m::Mesh, v::Vertex)
+    m.degrees[v] += 1
+end
+
+function decrement_degree(m::Mesh, v::Vertex)
+    m.degrees[v] -= 1
+end
+
+function increment_degree(m::Mesh, t::Triangle, i)
+    increment_degree(m, vertex(t, i))
+end
+
+function decrement_degree(m::Mesh, t::Triangle, i)
+    decrement_degree(m::Mesh, vertex(t, i))
+end
+
 function vertex_on_boundary(m::Mesh, v::Vertex)
     return m.vertex_on_boundary[v]
 end
@@ -158,7 +174,6 @@ function vertex_degrees(edges, num_vertices)
     end
     return degree
 end
-
 
 function Mesh(p::Matrix{Float64}, t::Matrix{Int})
     @assert size(p, 1) == 2

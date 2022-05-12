@@ -4,7 +4,8 @@ using Printf
 
 include("triangle.jl")
 include("mesh.jl")
-include("flip.jl")
 include("circlemesh.jl")
+include("flip.jl")
+include("split.jl")
 
 end

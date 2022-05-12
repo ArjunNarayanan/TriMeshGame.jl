@@ -66,12 +66,16 @@ function twin(t::Triangle, i)
     return t.twin[i]
 end
 
-function set_neighbor!(t::Triangle, idx, neighbor::Triangle, opp_vertex)
+function set_neighbor!(t::Triangle, idx, neighbor, opp_vertex)
     t.neighbors[idx] = neighbor
     t.twin[idx] = opp_vertex
 end
 
-function set_neighbors!(t::Triangle, neighbors::Vector{Triangle}, opp_vertices)
+function set_neighbors!(t::Triangle, neighbors, opp_vertices)
     t.neighbors .= neighbors
     t.twin .= opp_vertices
+end
+
+function set_vertex!(t::Triangle, idx, v)
+    t.vertices[idx] = v
 end
