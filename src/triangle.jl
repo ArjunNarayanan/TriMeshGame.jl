@@ -1,25 +1,11 @@
 function next(i)
-    if i == 1
-        return 2
-    elseif i == 2
-        return 3
-    elseif i == 3
-        return 1
-    else
-        error("Expected i = 1, 2, 3. Got i = $i")
-    end
+    @assert i == 1 || i == 2 || i == 3
+    return (i%3) + 1
 end
 
 function previous(i)
-    if i == 1
-        return 3
-    elseif i == 2
-        return 1
-    elseif i == 3
-        return 2
-    else
-        error("Expected i = 1, 2, 3. Got i = $i")
-    end
+    @assert i == 1 || i == 2 || i == 3
+    return ((i+1)%3) + 1
 end
 
 struct Vertex
@@ -39,12 +25,12 @@ end
 
 struct Triangle
     vertices::Vector{Vertex}
-    neighbors::Vector{Triangle}
+    neighbors::Vector{Union{Triangle,Nothing}}
     twin::Vector{Int}
 end
 
 function Triangle(vertices)
-    return Triangle(vertices, Vector{Triangle}(undef, 3), [0, 0, 0])
+    return Triangle(vertices, fill(nothing,3), zeros(Int,3))
 end
 
 function Base.show(io::IO, t::Triangle)
@@ -65,6 +51,11 @@ end
 
 function neighbor(t::Triangle, i)
     return t.neighbors[i]
+end
+
+function has_neighbor(t::Triangle, i)
+    @assert i == 1 || i == 2 || i == 3
+    return !isnothing(neighbor(t,i)) && twin(t, i) != 0
 end
 
 function twin(t::Triangle)

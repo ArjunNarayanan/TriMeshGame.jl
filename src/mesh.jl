@@ -102,10 +102,48 @@ end
 struct Mesh
     triangles::Vector{Triangle}
     vertices::Vector{Vertex}
+    degrees::IdDict{Vertex,Int}
+    vertex_on_boundary::IdDict{Vertex,Bool}
 end
 
 function triangles(m::Mesh)
     return m.triangles
+end
+
+function vertices(m::Mesh)
+    return m.vertices
+end
+
+function degrees(m::Mesh)
+    return m.degrees
+end
+
+function triangle(m::Mesh, i)
+    return m.triangles[i]
+end
+
+function vertex(m::Mesh, i)
+    return m.vertices[i]
+end
+
+function degree(m::Mesh, v::Vertex)
+    return m.degrees[v]
+end
+
+function degree(m::Mesh, i)
+    return degree(m, vertex(m, i))
+end
+
+function degree(m::Mesh, t::Triangle, i)
+    return degree(m, vertex(t, i))
+end
+
+function vertex_on_boundary(m::Mesh, v::Vertex)
+    return m.vertex_on_boundary[v]
+end
+
+function vertex_on_boundary(m::Mesh, t::Triangle, i)
+    return vertex_on_boundary(m, vertex(t, i))
 end
 
 function Base.show(io::IO, m::Mesh)
@@ -113,17 +151,33 @@ function Base.show(io::IO, m::Mesh)
     println(io, "Mesh\n\t $nt triangles")
 end
 
+function vertex_degrees(edges, num_vertices)
+    degree = zeros(Int, num_vertices)
+    for e in eachcol(edges)
+        degree[e] .+= 1
+    end
+    return degree
+end
+
+
 function Mesh(p::Matrix{Float64}, t::Matrix{Int})
-    @assert size(p,1) == 2
-    @assert size(t,1) == 3
+    @assert size(p, 1) == 2
+    @assert size(t, 1) == 3
 
     edges, boundary_edges, t2e = all_edges(t)
     t2t, t2n = triangle_connectivity(t, t2e)
 
-    vertices = vec(mapslices(Vertex, p, dims = 1))
-    triangles = [Triangle(vertices[v]) for v in eachcol(t)]
+    boundary_vertices = unique(vec(edges[:, boundary_edges]))
+    on_boundary = falses(size(p, 2))
+    on_boundary[boundary_vertices] .= true
 
+    vertices = vec(mapslices(Vertex, p, dims = 1))
+    d = vertex_degrees(edges, size(p, 2))
+    degrees = IdDict(zip(vertices, d))
+    vertex_on_boundary = IdDict(zip(vertices, on_boundary))
+
+    triangles = [Triangle(vertices[v]) for v in eachcol(t)]
     connect_triangles!(triangles, t2t, t2n)
 
-    return Mesh(triangles, vertices)
+    return Mesh(triangles, vertices, degrees, vertex_on_boundary)
 end
