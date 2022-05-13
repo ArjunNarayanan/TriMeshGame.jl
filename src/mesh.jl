@@ -170,6 +170,10 @@ function vertex_on_boundary(m::Mesh, t::Triangle, i)
     return vertex_on_boundary(m, vertex(t, i))
 end
 
+function on_boundary(m::Mesh, v::Vertex)
+    return m.vertex_on_boundary[v]
+end
+
 function Base.show(io::IO, m::Mesh)
     nt = length(triangles(m))
     println(io, "Mesh\n\t $nt triangles")
@@ -231,4 +235,8 @@ function index_triangle_connectivity(mesh::Mesh)
     t2id = IdDict(zip(triangles(mesh),1:number_of_triangles(mesh)))
     conn = [get(t2id,neighbor(t,i),0) for i in 1:3, t in triangles(mesh)]
     return conn
+end
+
+function averagesmoothing!(mesh::Mesh)
+    
 end
