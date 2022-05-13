@@ -106,6 +106,14 @@ struct Mesh
     vertex_on_boundary::IdDict{Vertex,Bool}
 end
 
+function number_of_triangles(mesh::Mesh)
+    return length(mesh.triangles)
+end
+
+function number_of_vertices(mesh)
+    return length(mesh.vertices)
+end
+
 function triangles(m::Mesh)
     return m.triangles
 end
@@ -175,6 +183,22 @@ function vertex_degrees(edges, num_vertices)
     return degree
 end
 
+function insert_vertex!(m::Mesh, v, d)
+    push!(m.vertices, v)
+    m.degrees[v] = d
+end
+
+function delete_triangle!(m::Mesh, t)
+    remove_neighbors!(t)
+    idx = findfirst(mt === t for mt in triangles(m))
+    @assert !isnothing(idx) "Did not find triangle in mesh"
+    deleteat!(m.triangles, idx)
+end
+
+function insert_triangle!(m::Mesh, t)
+    push!(m.triangles, t)
+end
+
 function Mesh(p::Matrix{Float64}, t::Matrix{Int})
     @assert size(p, 1) == 2
     @assert size(t, 1) == 3
@@ -195,4 +219,16 @@ function Mesh(p::Matrix{Float64}, t::Matrix{Int})
     connect_triangles!(triangles, t2t, t2n)
 
     return Mesh(triangles, vertices, degrees, vertex_on_boundary)
+end
+
+function index_vertex_connectivity(mesh::Mesh)
+    v2id = IdDict(zip(vertices(mesh),1:number_of_vertices(mesh)))
+    conn = [v2id[vertex(t, i)] for i in 1:3, t in triangles(mesh)]
+    return conn
+end
+
+function index_triangle_connectivity(mesh::Mesh)
+    t2id = IdDict(zip(triangles(mesh),1:number_of_triangles(mesh)))
+    conn = [get(t2id,neighbor(t,i),0) for i in 1:3, t in triangles(mesh)]
+    return conn
 end

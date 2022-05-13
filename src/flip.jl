@@ -62,18 +62,10 @@ function update_triangle_connectivity!(tri, ver, opp_tri, opp_ver)
     set_neighbor!(opp_tri, next(opp_ver), T4, v4)
     set_neighbor!(opp_tri, previous(opp_ver), T1, v1)
 
-    if !isnothing(T1)
-        set_neighbor!(T1, v1, opp_tri, previous(opp_ver))
-    end
-    if !isnothing(T2)
-        set_neighbor!(T2, v2, tri, next(ver))
-    end
-    if !isnothing(T3)
-        set_neighbor!(T3, v3, tri, previous(ver))
-    end
-    if !isnothing(T4)
-        set_neighbor!(T4, v4, opp_tri, next(opp_ver))
-    end
+    if !isnothing(T1) set_neighbor!(T1, v1, opp_tri, previous(opp_ver)) end
+    if !isnothing(T2) set_neighbor!(T2, v2, tri, next(ver)) end
+    if !isnothing(T3) set_neighbor!(T3, v3, tri, previous(ver)) end
+    if !isnothing(T4) set_neighbor!(T4, v4, opp_tri, next(opp_ver)) end
 end
 
 function update_vertex_degrees!(mesh, tri, ver, opp_tri, opp_ver)

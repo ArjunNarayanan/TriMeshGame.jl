@@ -76,6 +76,16 @@ function set_neighbors!(t::Triangle, neighbors, opp_vertices)
     t.twin .= opp_vertices
 end
 
+function remove_neighbor!(t::Triangle, idx)
+    t.neighbor[idx] = nothing
+    t.twin[idx] = 0
+end
+
+function remove_neighbors!(t::Triangle)
+    t.neighbors .= nothing
+    t.twin .= 0
+end
+
 function set_vertex!(t::Triangle, idx, v)
     t.vertices[idx] = v
 end
