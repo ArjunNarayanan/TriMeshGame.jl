@@ -23,6 +23,14 @@ function Base.show(io::IO, v::Vertex)
     println(io, s)
 end
 
+function Base.+(v1::Vertex, v2::Vertex)
+    return Vertex(coordinates(v1) + coordinates(v2))
+end
+
+function Base.*(a, v::Vertex)
+    return Vertex(a*coordinates(v))
+end
+
 struct Triangle
     vertices::Vector{Vertex}
     neighbors::Vector{Union{Triangle,Nothing}}

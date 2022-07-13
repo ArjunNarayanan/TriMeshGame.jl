@@ -69,11 +69,11 @@ function update_triangle_connectivity!(tri, ver, opp_tri, opp_ver)
 end
 
 function update_vertex_degrees!(mesh, tri, ver, opp_tri, opp_ver)
-    increment_degree(mesh, tri, ver)
-    increment_degree(mesh, opp_tri, opp_ver)
+    increment_degree!(mesh, tri, ver)
+    increment_degree!(mesh, opp_tri, opp_ver)
 
-    decrement_degree(mesh, tri, next(ver))
-    decrement_degree(mesh, tri, previous(ver))
+    decrement_degree!(mesh, tri, next(ver))
+    decrement_degree!(mesh, tri, previous(ver))
 end
 
 function flip!(mesh::Mesh, tri::Triangle, ver)

@@ -146,20 +146,20 @@ function degree(m::Mesh, t::Triangle, i)
     return degree(m, vertex(t, i))
 end
 
-function increment_degree(m::Mesh, v::Vertex)
+function increment_degree!(m::Mesh, v::Vertex)
     m.degrees[v] += 1
 end
 
-function decrement_degree(m::Mesh, v::Vertex)
+function decrement_degree!(m::Mesh, v::Vertex)
     m.degrees[v] -= 1
 end
 
-function increment_degree(m::Mesh, t::Triangle, i)
-    increment_degree(m, vertex(t, i))
+function increment_degree!(m::Mesh, t::Triangle, i)
+    increment_degree!(m, vertex(t, i))
 end
 
-function decrement_degree(m::Mesh, t::Triangle, i)
-    decrement_degree(m::Mesh, vertex(t, i))
+function decrement_degree!(m::Mesh, t::Triangle, i)
+    decrement_degree!(m::Mesh, vertex(t, i))
 end
 
 function vertex_on_boundary(m::Mesh, v::Vertex)
