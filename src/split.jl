@@ -34,7 +34,7 @@ function split!(m::Mesh, T::Triangle)
     increment_degree!(m, v2)
     increment_degree!(m, v3)
     
-    insert_vertex!(m, c, 3)
+    insert_vertex!(m, c, 3, false)
 
     delete_triangle!(m, T)
 
@@ -84,7 +84,7 @@ function split_interior_edge!(m, T, idx)
     increment_degree!(m, v1)
     increment_degree!(m, v4)
 
-    insert_vertex!(m, new_vertex, 4)
+    insert_vertex!(m, new_vertex, 4, false)
 
     delete_triangle!(m, T)
     delete_triangle!(m, T1)
@@ -93,6 +93,35 @@ function split_interior_edge!(m, T, idx)
     insert_triangle!(m, T7)
     insert_triangle!(m, T8)
     insert_triangle!(m, T9)
+end
+
+function split_boundary_edge!(m::Mesh, T::Triangle, idx)
+    @assert !has_neighbor(T, idx)
+
+    T1, T2 = neighbor(T, next(idx)), neighbor(T, previous(idx))
+    v1, v2, v3 = vertex(T, idx), vertex(T, next(idx)), vertex(T, previous(idx))
+
+    new_vertex = 0.5*(v2 + v3)
+
+    T3 = Triangle([new_vertex, v3, v1])
+    T4 = Triangle([new_vertex, v1, v2])
+
+    set_neighbor!(T3, 1, T1, twin(T, next(idx)))
+    set_neighbor!(T3, 2, T4, 3)
+
+    set_neighbor!(T4, 1, T2, twin(T, previous(idx)))
+    set_neighbor!(T4, 3, T3, 2)
+
+    if !isnothing(T1) set_neighbor!(T1, twin(T, next(idx)), T3, 1) end
+    if !isnothing(T2) set_neighbor!(T2, twin(T, previous(idx)), T4, 1) end
+
+    increment_degree!(m, v1)
+
+    insert_vertex!(m, new_vertex, 3, true)
+
+    delete_triangle!(m, T)
+    insert_triangle!(m, T3)
+    insert_triangle!(m, T4)
 end
 
 function split!(m::Mesh, T::Triangle, idx)

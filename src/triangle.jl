@@ -1,11 +1,11 @@
 function next(i)
     @assert i == 1 || i == 2 || i == 3
-    return (i%3) + 1
+    return (i % 3) + 1
 end
 
 function previous(i)
     @assert i == 1 || i == 2 || i == 3
-    return ((i+1)%3) + 1
+    return ((i + 1) % 3) + 1
 end
 
 struct Vertex
@@ -23,12 +23,13 @@ function Base.show(io::IO, v::Vertex)
     println(io, s)
 end
 
-function Base.+(v1::Vertex, v2::Vertex)
+
+function Base.:+(v1::Vertex, v2::Vertex)
     return Vertex(coordinates(v1) + coordinates(v2))
 end
 
-function Base.*(a, v::Vertex)
-    return Vertex(a*coordinates(v))
+function Base.:*(a, v::Vertex)
+    return Vertex(a * coordinates(v))
 end
 
 struct Triangle
@@ -38,7 +39,7 @@ struct Triangle
 end
 
 function Triangle(vertices)
-    return Triangle(vertices, fill(nothing,3), zeros(Int,3))
+    return Triangle(vertices, fill(nothing, 3), zeros(Int, 3))
 end
 
 function Base.show(io::IO, t::Triangle)
@@ -63,7 +64,7 @@ end
 
 function has_neighbor(t::Triangle, i)
     @assert i == 1 || i == 2 || i == 3
-    return !isnothing(neighbor(t,i)) && twin(t, i) != 0
+    return !isnothing(neighbor(t, i)) && twin(t, i) != 0
 end
 
 function twin(t::Triangle)

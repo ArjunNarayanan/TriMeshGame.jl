@@ -27,3 +27,16 @@ t = TM.triangle(mesh, 1)
 TM.flip!(mesh, t, 3)
 
 plot_mesh(mesh)
+
+p, t = TM.circlemesh(nref)
+mesh = TM.Mesh(p, t)
+tri = TM.triangle(mesh, 1)
+TM.split!(mesh, tri, 1)
+
+tri = TM.triangle(mesh, 2)
+TM.split!(mesh, tri, 2)
+plot_mesh(mesh)
+
+tri = TM.triangle(mesh, 1)
+TM.split!(mesh, tri, 2)
+plot_mesh(mesh)

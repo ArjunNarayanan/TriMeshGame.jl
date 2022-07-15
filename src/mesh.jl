@@ -187,9 +187,10 @@ function vertex_degrees(edges, num_vertices)
     return degree
 end
 
-function insert_vertex!(m::Mesh, v, d)
+function insert_vertex!(m::Mesh, v, d, on_boundary)
     push!(m.vertices, v)
     m.degrees[v] = d
+    m.vertex_on_boundary[v] = on_boundary
 end
 
 function delete_triangle!(m::Mesh, t)
