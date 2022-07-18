@@ -1,12 +1,16 @@
 using Test
 using Revise
 using TriMeshGame
-# include("plot_mesh.jl")
+using MeshPlotter
 
 TM = TriMeshGame
 
 nref = 0
-p, t = TM.circlemesh(nref)
+mesh = TM.circlemesh(0)
+
+f, ax = MeshPlotter.plot_mesh(mesh)
+f
+
 
 mesh = TM.Mesh(p, t)
 
