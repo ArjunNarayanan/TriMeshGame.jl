@@ -54,10 +54,10 @@ function isvalidflip(m::Mesh, triangle, vertex; maxdegree = 9)
         # were the node newt1[2] has degree less than 2 (otherwise you will not be able to flip it)
         # the second if condition is ensuring that interior nodes have a minimum degree of 3
         # which prevents triangles from inverting
-        if (m.node_on_bnd[newt1[2]] && m.d[newt1[2]] ≤ 2) ||
-           (!m.node_on_bnd[newt1[2]] && m.d[newt1[2]] ≤ 3) ||
-           (m.node_on_bnd[newt2[2]] && m.d[newt2[2]] ≤ 2) ||
-           (!m.node_on_bnd[newt2[2]] && m.d[newt2[2]] ≤ 3)
+        if (m.vertex_on_boundary[newt1[2]] && m.d[newt1[2]] ≤ 2) ||
+           (!m.vertex_on_boundary[newt1[2]] && m.d[newt1[2]] ≤ 3) ||
+           (m.vertex_on_boundary[newt2[2]] && m.d[newt2[2]] ≤ 2) ||
+           (!m.vertex_on_boundary[newt2[2]] && m.d[newt2[2]] ≤ 3)
             valid_flip = false
         end
     end

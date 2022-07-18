@@ -1,42 +1,49 @@
 using Test
 using Revise
 using TriMeshGame
-include("plot_mesh.jl")
+using MeshPlotter
+include("useful_routines.jl")
 
 TM = TriMeshGame
 
-nref = 0
-p, t = TM.circlemesh(nref)
-mesh = TM.Mesh(p, t)
-t = TM.triangle(mesh, 1)
+mesh = TM.circlemesh(0)
 
-TM.split!(mesh, t)
-plot_mesh(mesh)
+TM.split_interior_edge!(mesh, 1, 2)
 
-@test TM.number_of_triangles(mesh) == 8
-@test TM.number_of_vertices(mesh) == 8
+testconn = [1 2 3
+            1 3 4
+            1 4 5
+            1 5 6
+            1 6 7
+            1 7 2
+            8 2 3
+            8 3 4
+            8 4 1
+            8 1 2]
+@test allequal(testconn, mesh.t)
 
-d = [TM.degree(mesh, t, i) for i = 1:3, t in mesh.triangles]
+test_t2t = [0 2 6
+            0 3 1
+            0 4 9
+            0 5 3
+            0 6 4
+            0 10 5
+            0 8 10
+            0 9 7
+            3 10 8
+            6 7 9]
+@test allequal(test_t2t, mesh.t2t)
 
-testd = [7 7 7 7 7 3 3 3
-         4 3 3 3 3 4 4 7
-         3 3 3 3 4 4 7 4]
-@test all(d .== testd)
+test_t2n = [0 3 2
+            0 3 2
+            0 3 1
+            0 3 2
+            0 3 2
+            0 1 2
+            0 3 2
+            0 3 2
+            3 3 2
+            2 3 2]
+@test allequal(mesh.t2n, test_t2n)
 
-t = TM.triangle(mesh, 1)
-TM.flip!(mesh, t, 3)
-
-plot_mesh(mesh)
-
-p, t = TM.circlemesh(nref)
-mesh = TM.Mesh(p, t)
-tri = TM.triangle(mesh, 1)
-TM.split!(mesh, tri, 1)
-
-tri = TM.triangle(mesh, 2)
-TM.split!(mesh, tri, 2)
-plot_mesh(mesh)
-
-tri = TM.triangle(mesh, 1)
-TM.split!(mesh, tri, 2)
-plot_mesh(mesh)
+test_edges = 

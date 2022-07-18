@@ -1,6 +1,11 @@
-using TriMeshGame
+# using TriMeshGame
 using Test
+using SafeTestsets
 
-@testset "TriMeshGame.jl" begin
-    # Write your tests here.
+@safetestset "Test Mesh" begin
+    include("test_mesh.jl")
+end
+
+@safetestset "Test Flip" begin
+    include("test_flip.jl")
 end

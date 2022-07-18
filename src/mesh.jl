@@ -158,8 +158,23 @@ function num_edges(m::Mesh)
     return m.num_edges
 end
 
+function total_num_edges(m::Mesh)
+    return size(m.edges, 1)
+end
+
 function num_triangles(m::Mesh)
     return m.num_triangles
+end
+
+function total_num_triangles(m::Mesh)
+    return size(m.t, 1)
+end
+
+function has_neighbor(m::Mesh, tri, ver)
+    if !is_active_triangle(m, tri)
+        @warn "Triangle $tri is not active"
+    end
+    return m.t2t[tri,ver] != 0
 end
 
 function Base.show(io::IO, m::Mesh)
@@ -204,6 +219,7 @@ function insert_vertex!(m::Mesh, coords, deg, on_boundary)
     m.p = [m.p; coords']
     push!(m.d, deg)
     push!(m.vertex_on_boundary, on_boundary)
+    m.num_vertices += 1
 end
 
 function insert_triangle!(m::Mesh, conn, t2t, t2n, t2e)
@@ -212,14 +228,24 @@ function insert_triangle!(m::Mesh, conn, t2t, t2n, t2e)
     m.t2n = [m.t2n; t2n']
     m.t2e = [m.t2e; t2e']
     push!(m.active_triangle, true)
+    m.num_triangles += 1
+end
+
+function insert_edge!(m::Mesh, source, target)
+    e = [min(source,target), max(source,target)]
+    m.edges = [m.edges; e']
+    push!(m.active_edge, true)
+    m.num_edges += 1
 end
 
 function delete_triangle!(m::Mesh, tri_idx)
     m.active_triangle[tri_idx] = false
+    m.num_triangles -= 1
 end
 
 function delete_edge!(m::Mesh, edge_idx)
     m.active_edge[edge_idx] = false
+    m.num_edges -= 1
 end
 
 function refine(m::Mesh)
