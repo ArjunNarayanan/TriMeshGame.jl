@@ -33,6 +33,11 @@ function averagesmoothing!(p, edges, active_edges, bnd_nodes; numiter = 1)
     end
 end
 
+function averagesmoothing!(mesh; numiter = 1)
+    bnd_ver = findall(mesh.vertex_on_boundary)
+    averagesmoothing!(mesh.p, mesh.edges, mesh.active_edge, bnd_ver, numiter = numiter)
+end
+
 function circlemesh(nref)
     p, t = template_circlemesh()
     edges, boundary_edges, t2e = all_edges(t)

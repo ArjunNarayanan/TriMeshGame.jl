@@ -193,8 +193,8 @@ edge_on_boundary[[7,8,9,10,11,12,14,15]] .= true
 @test TM.total_num_edges(mesh) == 15
 @test TM.total_num_triangles(mesh) == 8
 
-using MeshPlotter
-mesh = TM.circlemesh(0)
-TM.split_interior_edge!(mesh, 3, 3)
-TM.split_boundary_edge!(mesh, 5, 1)
-MeshPlotter.plot_mesh(mesh)[1]
+# using MeshPlotter
+# mesh = TM.circlemesh(0)
+# TM.split_interior_edge!(mesh, 3, 3)
+# TM.split_boundary_edge!(mesh, 5, 1)
+# MeshPlotter.plot_mesh(mesh)[1]
