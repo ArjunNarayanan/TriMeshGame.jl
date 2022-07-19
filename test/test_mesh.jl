@@ -1,5 +1,5 @@
 using Test
-using Revise
+# using Revise
 using TriMeshGame
 include("useful_routines.jl")
 
@@ -51,14 +51,12 @@ t2e = [7 2 1
 d = [6,3,3,3,3,3,3]
 @test allequal(d,mesh.d)
 
-bnd_nodes = [2,3,4,5,6,7]
-@test allequal(bnd_nodes,mesh.boundary_vertex)
-
-boundary_edges = [7,8,9,10,11,12]
-@test allequal(boundary_edges,mesh.boundary_edges)
-
 node_on_boundary = [false,true,true,true,true,true,true]
 @test allequal(node_on_boundary,mesh.vertex_on_boundary)
+
+edge_on_boundary = falses(12)
+edge_on_boundary[[7,8,9,10,11,12]] .= true
+@test allequal(edge_on_boundary, mesh.edge_on_boundary)
 
 @test TM.num_edges(mesh) == 12
 @test TM.num_triangles(mesh) == 6
@@ -69,7 +67,6 @@ mesh = TM.circlemesh(0)
 mesh = TM.refine(mesh)
 @test TM.num_triangles(mesh) == 24
 
-using MeshPlotter
-
-f, a = MeshPlotter.plot_mesh(mesh, d0 = mesh.d)
-f
+# using MeshPlotter
+# f, a = MeshPlotter.plot_mesh(mesh, d0 = mesh.d)
+# f

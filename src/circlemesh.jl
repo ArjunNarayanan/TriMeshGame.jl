@@ -9,29 +9,6 @@ function template_circlemesh()
     return p, t
 end
 
-function refine(p, t, edges, t2e)
-    np, dim = size(p)
-
-    # find the midpoint of each edge
-    pmid = (p[edges[:, 1], :] + p[edges[:, 2], :]) / 2
-    t1 = t[:, 1]
-    t2 = t[:, 2]
-    t3 = t[:, 3]
-    t23 = t2e[:, 1] .+ np
-    t31 = t2e[:, 2] .+ np
-    t12 = t2e[:, 3] .+ np
-
-    t = [
-        t1 t12 t31
-        t12 t23 t31
-        t2 t23 t12
-        t3 t31 t23
-    ]
-    p = [p; pmid]
-
-    return p, t
-end
-
 function correct_boundary_vertices!(p, boundary_nodes)
     p[boundary_nodes, :] =
         p[boundary_nodes, :] ./ sqrt.(sum(p[boundary_nodes, :] .^ 2, dims = 2))

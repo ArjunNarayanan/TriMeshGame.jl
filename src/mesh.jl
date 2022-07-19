@@ -101,9 +101,8 @@ mutable struct Mesh
     t2e::Matrix{Int64}
 
     d::Vector{Int64}
-    boundary_vertex::Vector{Int64}
-    boundary_edges::Vector{Int64}
     vertex_on_boundary::Vector{Bool}
+    edge_on_boundary::Vector{Bool}
 
     active_triangle::Vector{Bool}
     active_edge::Vector{Bool}
@@ -119,6 +118,9 @@ mutable struct Mesh
         num_edges = size(edges, 1)
         num_triangles = size(t, 1)
         num_vertices = size(p, 1)
+
+        edge_on_boundary = falses(num_edges)
+        edge_on_boundary[boundary_edges] .= true
 
         boundary_vertex = boundary_vertices(edges, boundary_edges)
         vertex_on_boundary = falses(num_vertices)
@@ -138,9 +140,8 @@ mutable struct Mesh
             t2n,
             t2e,
             degrees,
-            boundary_vertex,
-            boundary_edges,
             vertex_on_boundary,
+            edge_on_boundary,
             active_triangle,
             active_edge,
             num_vertices,
@@ -231,10 +232,11 @@ function insert_triangle!(m::Mesh, conn, t2t, t2n, t2e)
     m.num_triangles += 1
 end
 
-function insert_edge!(m::Mesh, source, target)
+function insert_edge!(m::Mesh, source, target, on_boundary)
     e = [min(source,target), max(source,target)]
     m.edges = [m.edges; e']
     push!(m.active_edge, true)
+    push!(m.edge_on_boundary, on_boundary)
     m.num_edges += 1
 end
 
@@ -246,6 +248,29 @@ end
 function delete_edge!(m::Mesh, edge_idx)
     m.active_edge[edge_idx] = false
     m.num_edges -= 1
+end
+
+function refine(p, t, edges, t2e)
+    np, dim = size(p)
+
+    # find the midpoint of each edge
+    pmid = (p[edges[:, 1], :] + p[edges[:, 2], :]) / 2
+    t1 = t[:, 1]
+    t2 = t[:, 2]
+    t3 = t[:, 3]
+    t23 = t2e[:, 1] .+ np
+    t31 = t2e[:, 2] .+ np
+    t12 = t2e[:, 3] .+ np
+
+    t = [
+        t1 t12 t31
+        t12 t23 t31
+        t2 t23 t12
+        t3 t31 t23
+    ]
+    p = [p; pmid]
+
+    return p, t
 end
 
 function refine(m::Mesh)

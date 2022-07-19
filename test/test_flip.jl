@@ -1,5 +1,5 @@
 using Test
-using Revise
+# using Revise
 using TriMeshGame
 include("useful_routines.jl")
 
