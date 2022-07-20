@@ -27,8 +27,8 @@ testconn = [1 2 3
             8 1 2]
 @test allequal(testconn, mesh.t)
 
-test_t2t = [0 2 6
-            0 3 1
+test_t2t = [0 0 0
+            0 0 0
             0 4 9
             0 5 3
             0 6 4
@@ -39,8 +39,8 @@ test_t2t = [0 2 6
             6 7 9]
 @test allequal(test_t2t, mesh.t2t)
 
-test_t2n = [0 3 2
-            0 3 2
+test_t2n = [0 0 0
+            0 0 0
             0 3 1
             0 3 2
             0 3 2
@@ -126,7 +126,7 @@ test_t2t = [0 2 8
             0 4 2
             0 5 3
             0 7 4
-            0 1 5
+            0 0 0
             5 0 8
             1 7 0]
 @test allequal(test_t2t, mesh.t2t)
@@ -136,7 +136,7 @@ test_t2n = [0 3 1
             0 3 2
             0 3 2
             0 1 2
-            0 3 2
+            0 0 0
             2 0 2
             3 3 0]
 @test allequal(test_t2n, mesh.t2n)
