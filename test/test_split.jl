@@ -15,8 +15,8 @@ TM.split_interior_edge!(mesh, 1, 2)
 
 @test allapprox(points, mesh.p)
 
-testconn = [1 2 3
-            1 3 4
+testconn = [0 0 0
+            0 0 0
             1 4 5
             1 5 6
             1 6 7
@@ -116,7 +116,7 @@ test_conn = [1 2 3
              1 4 5
              1 5 6
              1 6 7
-             1 7 2
+             0 0 0
              8 1 7
              8 2 1]
 @test allequal(test_conn, mesh.t)

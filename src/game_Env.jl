@@ -18,6 +18,18 @@ function make_edge_pairs(mesh)
     return pairs
 end
 
+function cycle_edges(x)
+    nf, na = size(x)
+    x = reshape(x, nf, 3, :)
+
+    x1 = reshape(x, 3nf, 1, :)
+    x2 = reshape(x[:,[2,3,1],:], 3nf, 1, :)
+    x3 = reshape(x[:,[3,1,2],:], 3nf, 1, :)
+
+    x = reshape(cat(x1, x2, x3, dims = 2), 3nf, :)
+    return x
+end
+
 mutable struct GameEnv
     mesh0::Mesh
     mesh::Mesh

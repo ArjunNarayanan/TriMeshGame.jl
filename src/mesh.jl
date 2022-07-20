@@ -242,6 +242,7 @@ end
 
 function delete_triangle!(m::Mesh, tri_idx)
     m.active_triangle[tri_idx] = false
+    m.t[tri_idx,:] .= 0
     m.t2t[tri_idx,:] .= 0
     m.t2n[tri_idx,:] .= 0
     m.num_triangles -= 1
