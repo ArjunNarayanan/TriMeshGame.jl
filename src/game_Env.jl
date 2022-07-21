@@ -56,6 +56,7 @@ mutable struct GameEnv
     initial_score::Any
     current_score::Any
     opt_score::Any
+    reward::Any
     is_terminated::Any
 end
 
@@ -71,6 +72,15 @@ function check_terminated(num_actions, max_actions, current_score, opt_score)
     return num_actions >= max_actions || current_score <= opt_score
 end
 
+function check_terminated(env::GameEnv)
+    return check_terminated(
+        env.num_actions,
+        env.max_actions,
+        env.current_score,
+        env.opt_score,
+    )
+end
+
 function GameEnv(mesh0, d0, max_actions)
     mesh = deepcopy(mesh0)
     vertex_score = mesh.d - d0
@@ -79,6 +89,7 @@ function GameEnv(mesh0, d0, max_actions)
     initial_score = global_score(vertex_score)
     current_score = initial_score
     opt_score = optimum_score(vertex_score)
+    reward = 0
     is_terminated = check_terminated(num_actions, max_actions, current_score, opt_score)
     GameEnv(
         mesh,
@@ -90,6 +101,7 @@ function GameEnv(mesh0, d0, max_actions)
         initial_score,
         current_score,
         opt_score,
+        reward,
         is_terminated,
     )
 end
@@ -103,3 +115,50 @@ function Base.show(io::IO, env::GameEnv)
     println(io, "   terminated  : $(env.is_terminated)")
 end
 
+"""
+    type == 1 => flip the edge
+    type == 2 => split the edge
+"""
+function step!(env, triangle, vertex, type; no_action_reward = -4)
+    if type == 1
+        step_flip!(env, triangle, vertex, no_action_reward)
+    elseif type == 2
+        step_split!(env, triangle, vertex, no_action_reward)
+    else
+        error("Expected type ∈ {1,2} got type = $type")
+    end
+end
+
+function update_env_after_step!(env)
+    env.vertex_score .= env.mesh.d - env.d0
+    env.template .= make_template(mesh)
+    env.current_score = global_score(env.vertex_score)
+end
+
+function step_flip!(env, triangle, vertex, no_action_reward)
+    old_score = env.current_score
+    if isvalidflip(env.mesh, triangle, vertex)
+        edgeflip!(env.mesh, triangle, vertex)
+
+        update_env_after_step!(env)
+        env.reward = old_score - env.current_score
+    else
+        env.reward = no_action_reward
+    end
+    env.num_actions += 1
+    env.is_terminated = check_terminated(env)
+end
+
+function step_split!(env, triangle, vertex, no_action_reward)
+    old_score = env.current_score
+    if has_neighbor(env.mesh, triangle, vertex)
+        split_interior_edge!(env.mesh, triangle, vertex)
+
+        update_env_after_step!(env)
+        env.reward = old_score - env.current_score
+    else
+        env.reward = no_action_reward
+    end
+    env.num_actions += 1
+    env.is_terminated = check_terminated(env)
+end
