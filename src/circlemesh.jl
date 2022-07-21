@@ -14,7 +14,7 @@ function correct_boundary_vertices!(p, boundary_nodes)
         p[boundary_nodes, :] ./ sqrt.(sum(p[boundary_nodes, :] .^ 2, dims = 2))
 end
 
-function averagesmoothing!(p, edges, active_edges, bnd_nodes; numiter = 1)
+function averagesmoothing!(p, edges, active_edges, bnd_nodes, numiter)
     for iter = 1:numiter
         np, dim = size(p)
         newp = zeros(np, 2)
@@ -33,9 +33,9 @@ function averagesmoothing!(p, edges, active_edges, bnd_nodes; numiter = 1)
     end
 end
 
-function averagesmoothing!(mesh; numiter = 1)
+function averagesmoothing!(mesh, numiter)
     bnd_ver = findall(mesh.vertex_on_boundary)
-    averagesmoothing!(mesh.p, mesh.edges, mesh.active_edge, bnd_ver, numiter = numiter)
+    averagesmoothing!(mesh.p, mesh.edges, mesh.active_edge, bnd_ver, numiter)
 end
 
 function circlemesh(nref)
@@ -48,7 +48,7 @@ function circlemesh(nref)
         edges, boundary_edges, t2e = all_edges(t)
         bnd_nodes = boundary_vertices(edges, boundary_edges)
         correct_boundary_vertices!(p, bnd_nodes)
-        averagesmoothing!(p, edges, trues(size(edges,1)), bnd_nodes, numiter = 5)
+        averagesmoothing!(p, edges, trues(size(edges,1)), bnd_nodes, 3)
     end
 
     return Mesh(p, t)
