@@ -13,3 +13,7 @@ end
 @safetestset "Test Split" begin
     include("test_split.jl")
 end
+
+@safetestset "Test Game Env" begin
+    include("test_game_env.jl")
+end
