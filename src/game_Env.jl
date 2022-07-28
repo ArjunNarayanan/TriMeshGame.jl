@@ -130,14 +130,14 @@ function step!(env, triangle, vertex, type; no_action_reward = -4)
 end
 
 function update_env_after_step!(env)
-    env.vertex_score .= env.mesh.d - env.d0
-    env.template .= make_template(mesh)
+    env.vertex_score = env.mesh.d - env.d0
+    env.template = make_template(env.mesh)
     env.current_score = global_score(env.vertex_score)
 end
 
 function step_flip!(env, triangle, vertex, no_action_reward)
     old_score = env.current_score
-    if isvalidflip(env.mesh, triangle, vertex)
+    if is_active_triangle(env.mesh, triangle) && isvalidflip(env.mesh, triangle, vertex)
         edgeflip!(env.mesh, triangle, vertex)
 
         update_env_after_step!(env)
@@ -149,11 +149,12 @@ function step_flip!(env, triangle, vertex, no_action_reward)
     env.is_terminated = check_terminated(env)
 end
 
-function step_split!(env, triangle, vertex, no_action_reward)
+function step_split!(env, triangle, vertex, no_action_reward; new_vertex_degree = 6)
     old_score = env.current_score
-    if has_neighbor(env.mesh, triangle, vertex)
+    if is_active_triangle(env.mesh,triangle) && has_neighbor(env.mesh, triangle, vertex)
         split_interior_edge!(env.mesh, triangle, vertex)
-
+        
+        push!(env.d0, new_vertex_degree)
         update_env_after_step!(env)
         env.reward = old_score - env.current_score
     else

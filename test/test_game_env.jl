@@ -49,11 +49,6 @@ env = TM.GameEnv(mesh, d0, 10)
 @test env.reward == 0
 @test env.is_terminated == false
 
-function val_or_zero(vector, template)
-    output = [t == 0 ? 0 : vector[t] for t in template]
-end
 
-vs = val_or_zero(env.vertex_score, env.template)
-v0 = val_or_zero(env.d0, env.template)
-
-state = vcat(vs,v0)
+TM.step!(env, 1, 2, 1)
+TM.step!(env, 5, 2, 2)
