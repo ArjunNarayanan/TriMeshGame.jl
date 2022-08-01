@@ -163,3 +163,19 @@ function step_split!(env, triangle, vertex, no_action_reward; new_vertex_degree 
     env.num_actions += 1
     env.is_terminated = check_terminated(env)
 end
+
+function step_split_allow_boundary!(env, triangle, vertex, no_action_reward, new_vertex_degree)
+    old_score = env.current_score
+    if is_active_triangle(env.mesh,triangle)
+        if has_neighbor(env.mesh, triangle, vertex)
+            split_interior_edge!(env.mesh, triangle, vertex)
+        else
+            split_boundary_edge!(env.mesh, triangle, vertex)
+        end
+        push!(env.d0, new_vertex_degree)
+        update_env_after_step!(env)
+        env.reward = old_score - env.current_score
+    else
+        env.reward = no_action_reward
+    end
+end
