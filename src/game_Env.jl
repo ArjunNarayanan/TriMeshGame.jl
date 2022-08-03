@@ -38,7 +38,7 @@ function cycle_edges(x)
     x2 = reshape(x[:, [2, 3, 1], :], 3nf, 1, :)
     x3 = reshape(x[:, [3, 1, 2], :], 3nf, 1, :)
 
-    x = reshape(cat(x1, x2, x3, dims = 2), 3nf, :)
+    x = reshape(cat(x1, x2, x3, dims=2), 3nf, :)
     return x
 end
 
@@ -119,7 +119,7 @@ end
     type == 1 => flip the edge
     type == 2 => split the edge
 """
-function step!(env, triangle, vertex, type; no_action_reward = -4)
+function step!(env, triangle, vertex, type; no_action_reward=-4)
     if type == 1
         step_flip!(env, triangle, vertex, no_action_reward)
     elseif type == 2
@@ -137,7 +137,8 @@ end
 
 function step_flip!(env, triangle, vertex, no_action_reward)
     old_score = env.current_score
-    if is_active_triangle(env.mesh, triangle) && isvalidflip(env.mesh, triangle, vertex)
+    @assert is_active_triangle(env.mesh, triangle)
+    if isvalidflip(env.mesh, triangle, vertex)
         edgeflip!(env.mesh, triangle, vertex)
 
         update_env_after_step!(env)
@@ -149,11 +150,11 @@ function step_flip!(env, triangle, vertex, no_action_reward)
     env.is_terminated = check_terminated(env)
 end
 
-function step_split!(env, triangle, vertex, no_action_reward; new_vertex_degree = 6)
+function step_split!(env, triangle, vertex, no_action_reward; new_vertex_degree=6)
     old_score = env.current_score
-    if is_active_triangle(env.mesh,triangle) && has_neighbor(env.mesh, triangle, vertex)
+    if is_active_triangle(env.mesh, triangle) && has_neighbor(env.mesh, triangle, vertex)
         split_interior_edge!(env.mesh, triangle, vertex)
-        
+
         push!(env.d0, new_vertex_degree)
         update_env_after_step!(env)
         env.reward = old_score - env.current_score
@@ -166,16 +167,22 @@ end
 
 function step_split_allow_boundary!(env, triangle, vertex, no_action_reward, new_vertex_degree)
     old_score = env.current_score
-    if is_active_triangle(env.mesh,triangle)
-        if has_neighbor(env.mesh, triangle, vertex)
-            split_interior_edge!(env.mesh, triangle, vertex)
-        else
-            split_boundary_edge!(env.mesh, triangle, vertex)
-        end
-        push!(env.d0, new_vertex_degree)
-        update_env_after_step!(env)
-        env.reward = old_score - env.current_score
+    @assert is_active_triangle(env.mesh, triangle)
+
+    if has_neighbor(env.mesh, triangle, vertex)
+        split_interior_edge!(env.mesh, triangle, vertex)
     else
-        env.reward = no_action_reward
+        split_boundary_edge!(env.mesh, triangle, vertex)
     end
+    push!(env.d0, new_vertex_degree)
+    update_env_after_step!(env)
+    env.reward = old_score - env.current_score
+    env.num_actions += 1
+    env.is_terminated = check_terminated(env)
+end
+
+function step_no_action!(env, no_action_reward)
+    env.reward = no_action_reward
+    env.num_actions += 1
+    env.is_terminated = check_terminated(env)
 end
