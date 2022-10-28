@@ -48,7 +48,3 @@ env = TM.GameEnv(mesh, d0, 10)
 @test env.opt_score == 0
 @test env.reward == 0
 @test env.is_terminated == false
-
-
-TM.step!(env, 1, 2, 1)
-TM.step!(env, 5, 2, 2)
