@@ -7,6 +7,6 @@ include("circlemesh.jl")
 include("flip.jl")
 include("split.jl")
 include("random_actions.jl")
-include("game_env.jl")
+include("game_environment.jl")
 
 end
