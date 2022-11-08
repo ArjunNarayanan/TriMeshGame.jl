@@ -23,7 +23,7 @@ function all_edges(t)
     dup = dup[keep]
     # Edges that are not counted twice are boundary edges!
     bndix = findall(.!dup)
-    return edges, bndix, emap
+    return Array(edges'), bndix, Array(emap')
 end
 
 """
@@ -61,17 +61,17 @@ function triangle_connectivity(t, t2e)
     t2n[ts1[:, 1].+nt*(ts1[:, 2].-1)] = ts2[:, 2]
     t2n[ts2[:, 1].+nt*(ts2[:, 2].-1)] = ts1[:, 2]
 
-    t2t, t2n
+    Array(t2t'), Array(t2n')
 end
 
 function boundary_vertices(edges, boundary_edges)
-    return unique(vec(edges[boundary_edges, :]))
+    return unique(vec(edges[:, boundary_edges]))
 end
 
 function vertex_degrees(edges, num_vertices)
     d = zeros(Int, num_vertices)
-    for i = 1:size(edges, 1)
-        d[edges[i, [1, 2]]] .+= 1
+    for (i,col) in enumerate(eachcol(edges))
+        d[edges[[1,2], i]] .+= 1
     end
     return d
 end
@@ -93,8 +93,8 @@ end
 `node_on_bnd` - true/false if node on boundary
 """
 mutable struct Mesh
-    p::Matrix{Float64}
-    t::Matrix{Int64}
+    vertices::Matrix{Float64}
+    connectivity::Matrix{Int64}
     edges::Matrix{Int64}
     t2t::Matrix{Int64}
     t2n::Matrix{Int64}
@@ -106,19 +106,31 @@ mutable struct Mesh
 
     active_triangle::Vector{Bool}
     active_edge::Vector{Bool}
+    active_vertex::Vector{Bool}
 
     num_vertices::Int
     num_edges::Int
     num_triangles::Int
 
-    function Mesh(p, t)
+    function Mesh(vertices, connectivity)
+
+        num_triangles = size(connectivity, 2)
+        num_vertices = size(vertices, 2)
+        
+        @assert size(vertices, 1) == 2
+        @assert size(connectivity, 1) == 3
+
+        t = Array(connectivity')
         edges, boundary_edges, t2e = all_edges(t)
         t2t, t2n = triangle_connectivity(t, t2e)
 
-        num_edges = size(edges, 1)
-        num_triangles = size(t, 1)
-        num_vertices = size(p, 1)
 
+        @assert size(t2t,1) == 3
+        @assert size(t2n,1) == 3
+        @assert size(edges,1) == 2
+
+        num_edges = size(edges, 2)
+        
         edge_on_boundary = falses(num_edges)
         edge_on_boundary[boundary_edges] .= true
 
@@ -126,24 +138,63 @@ mutable struct Mesh
         vertex_on_boundary = falses(num_vertices)
         vertex_on_boundary[boundary_vertex] .= true
 
+        num_boundary_vertices = length(boundary_vertex)
+        # @assert num_triangles + 3*num_vertices - 2 == num_edges
+
         degrees = vertex_degrees(edges, num_vertices)
 
-        active_triangle = trues(num_triangles)
-        active_edge = trues(num_edges)
+
+        triangle_buffer = 2*num_triangles
+        vertex_buffer = 2*num_vertices
+
+        _vertices = zeros(2, vertex_buffer)
+        _vertices[:, 1:num_vertices] .= vertices
+
+        _connectivity = zeros(3, triangle_buffer)
+        _connectivity[:, 1:num_triangles] .= connectivity
+
+        _t2t = zeros(3, triangle_buffer)
+        _t2t[:, 1:num_triangles] .= t2t
+
+        _t2n = zeros(3, triangle_buffer)
+        _t2n[:, 1:num_triangles] .= t2n
+
+        _t2e = zeros(3, triangle_buffer)
+        _t2e[:, 1:num_triangles] .= t2e
+
+        _degrees = zeros(Int, vertex_buffer)
+        _degrees[1:num_vertices] .= degrees
+
+        _edges = zeros(Int, 2, 2*num_edges)
+        _edges[:, 1:num_edges] .= edges
+
+        active_triangles = falses(triangle_buffer)
+        active_triangles[1:num_triangles] .= true
+
+        active_vertices = falses(vertex_buffer)
+        active_vertices[1:num_vertices] .= true
+        _vertex_on_boundary = falses(vertex_buffer)
+        _vertex_on_boundary[1:num_vertices] .= vertex_on_boundary
+
+        active_edges = falses(2*num_edges)
+        active_edges[1:num_edges] .= true
+        _edge_on_boundary = falses(2*num_edges)
+        _edge_on_boundary[1:num_edges] .= edge_on_boundary
 
 
         return new(
-            p,
-            t,
-            edges,
-            t2t,
-            t2n,
-            t2e,
-            degrees,
-            vertex_on_boundary,
-            edge_on_boundary,
-            active_triangle,
-            active_edge,
+            _vertices,
+            _connectivity,
+            _edges,
+            _t2t,
+            _t2n,
+            _t2e,
+            _degrees,
+            _vertex_on_boundary,
+            _edge_on_boundary,
+            active_triangles,
+            active_edges,
+            active_vertices,
             num_vertices,
             num_edges,
             num_triangles,
@@ -198,6 +249,14 @@ end
 
 function vertex(m::Mesh, tri_idx, ver_idx)
     return m.t[tri_idx, ver_idx]
+end
+
+function active_vertices(mesh)
+    return mesh.vertices[:, mesh.active_vertex]
+end
+
+function active_connectivity(mesh)
+    return mesh.connectivity[:, mesh.active_triangles]
 end
 
 function increment_degree!(m::Mesh, vertex_idx)

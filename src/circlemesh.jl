@@ -3,8 +3,10 @@ function template_circlemesh()
     phi = 2pi * (1:6) / 6
 
     p = [0 0; cos.(phi) sin.(phi)]
+    p = Array(p')
     # coarsest mesh connectivity with 6 triangles
     t = [1 2 3; 1 3 4; 1 4 5; 1 5 6; 1 6 7; 1 7 2]
+    t = Array(t')
 
     return p, t
 end
