@@ -1,5 +1,5 @@
 using Test
-# using Revise
+using Revise
 using TriMeshGame
 include("useful_routines.jl")
 
@@ -13,21 +13,7 @@ t = [1 2 3
      1 5 6
      1 6 7
      1 7 2]
-@test allequal(t,mesh.t)
-
-edges = [1 2
-         1 3
-         1 4
-         1 5
-         1 6
-         1 7
-         2 3
-         2 7
-         3 4
-         4 5
-         5 6
-         6 7]
-@test allequal(mesh.edges,edges)
+@test allequal(t',TM.active_connectivity(mesh))
 
 t2t = [0 2 6
        0 3 1
@@ -35,18 +21,10 @@ t2t = [0 2 6
        0 5 3
        0 6 4
        0 1 5]
-@test allequal(mesh.t2t,t2t)
+@test allequal(TM.active_t2t(mesh),t2t')
 
 t2n = repeat([0,3,2]',6)
-@test allequal(t2n,mesh.t2n)
-
-t2e = [7 2 1
-       9 3 2
-       10 4 3
-       11 5 4
-       12 6 5
-       8 1 6]
-@test allequal(t2e,mesh.t2e)
+@test allequal(t2n',TM.active_t2n(mesh))
 
 d = [6,3,3,3,3,3,3]
 @test allequal(d,mesh.d)

@@ -1,68 +1,56 @@
 """
-    all_edges(t)
+    mkt2t(t)
 
-returns `edges,bndidx,emap` where
-    `edges` [numedges,2] node connectivity. Each row is a pair of vertices
-        that have an edge between them
-    `bndidx` index of edges that are on the boundary (i.e. shared by only one triangle)
-    `emap` [numtriangles,3] index of edges that are opposite to the vertices in `t`.
-        i.e. edges[emap[it,n],:] is the edge opposite to node `t[it,n]` in triangle `it`
+returns `t2t,t2n` where
+    `t2t[triangle_index, half_edge_index]` provides the triangle-to-triangle connectivity
+    `t2n[triangle_index, half_edge_index]` provides the local half-edge index in the neighboring triangle
 """
-function all_edges(t)
-    edgemap = [2 3; 3 1; 1 2]
-    etag = vcat(t[:, edgemap[1, :]], t[:, edgemap[2, :]], t[:, edgemap[3, :]])
-    etag = hcat(sort(etag, dims = 2), 1:3*size(t, 1))
-    etag = sortslices(etag, dims = 1)
-    dup = all(etag[2:end, 1:2] - etag[1:end-1, 1:2] .== 0, dims = 2)[:]
+function mkt2t(t)
+    map = [2 3 1
+        3 1 2]
+    ne, nt = size(map, 2), size(t, 2)
+
+    t2t = zeros(Int, ne, nt)
+    t2n = zeros(Int, ne, nt)
+    dd = Dict{Tuple{Int,Int},Tuple{Int,Int}}()
+    sizehint!(dd, nt * ne)
+    for it = 1:nt
+        for ie = 1:ne
+            e1 = t[map[1, ie], it]
+            e2 = t[map[2, ie], it]
+            e = (min(e1, e2), max(e1, e2))
+            if haskey(dd, e)
+                nb = pop!(dd, e)
+                t2t[ie, it] = nb[1]
+                t2n[ie, it] = nb[2]
+                t2t[nb[2], nb[1]] = it
+                t2n[nb[2], nb[1]] = ie
+            else
+                dd[e] = (it, ie)
+            end
+        end
+    end
+    t2t, t2n
+end
+
+
+function all_edges(connectivity)
+    etag =
+        [connectivity[[1, 2], :] connectivity[[2, 3], :] connectivity[[3, 1], :]]
+    etag = sort(etag, dims=1)
+    etag = sortslices(etag, dims=2)
+
+    dup = vec(all(etag[:, 2:end] - etag[:, 1:end-1] .== 0, dims=1))
     keep = .![false; dup]
-    edges = etag[keep, 1:2]
-    emap = cumsum(keep)
-    invpermute!(emap, etag[:, 3])
-    emap = reshape(emap, :, 3)
+    edges = etag[:, keep]
+
     dup = [dup; false]
     dup = dup[keep]
-    # Edges that are not counted twice are boundary edges!
     bndix = findall(.!dup)
-    return Array(edges'), bndix, Array(emap')
+
+    return edges, bndix
 end
 
-"""
-    triangle_connectivity(t)
-
-    returns `t2t,t2n` where
-    `t2t` [numtriangles,3] triangle connectivity matrix. `t2t[it,n]` is the triangle adjacent
-        to edge opposite node `n` in triangle `it`. 0 if there is no neighboring triangle.
-    `t2n` [numtriangles,3] local index of node opposite shared edge in adjacent triangle.
-        i.e. let `jt = t2t[it,n]` then `jt` and `it` share an edge. `t2n[it,n]` is the
-        local index of the node in `jt` that is opposite the shared edge between `it` and `jt`.
-        0 if there is no neighboring triangle.
-"""
-function triangle_connectivity(t, t2e)
-    nt = size(t, 1)
-    ts = [repeat(1:nt, 3) repeat(transpose(1:3), nt)[:]]
-
-    ix = sortperm(t2e[:])
-    jx = t2e[ix]
-    ts = ts[ix, :]
-
-    ix = findall(diff(jx) .== 0)
-    # these are all the interior [triangle,edge] pairs per row
-    ts1 = ts[ix, :]
-    ts2 = ts[ix.+1, :]
-
-    # for each [triangle,edge] which neighboring triangle am i connected to
-    t2t = zeros(Int, nt, 3)
-    t2t[ts1[:, 1].+nt*(ts1[:, 2].-1)] = ts2[:, 1]
-    t2t[ts2[:, 1].+nt*(ts2[:, 2].-1)] = ts1[:, 1]
-
-    # for each [triangle,edge] which edge in my neighboring triangle
-    # am I connected to
-    t2n = zeros(Int, nt, 3)
-    t2n[ts1[:, 1].+nt*(ts1[:, 2].-1)] = ts2[:, 2]
-    t2n[ts2[:, 1].+nt*(ts2[:, 2].-1)] = ts1[:, 2]
-
-    Array(t2t'), Array(t2n')
-end
 
 function boundary_vertices(edges, boundary_edges)
     return unique(vec(edges[:, boundary_edges]))
@@ -70,8 +58,8 @@ end
 
 function vertex_degrees(edges, num_vertices)
     d = zeros(Int, num_vertices)
-    for (i,col) in enumerate(eachcol(edges))
-        d[edges[[1,2], i]] .+= 1
+    for (i, col) in enumerate(eachcol(edges))
+        d[edges[[1, 2], i]] .+= 1
     end
     return d
 end
@@ -95,57 +83,42 @@ end
 mutable struct Mesh
     vertices::Matrix{Float64}
     connectivity::Matrix{Int64}
-    edges::Matrix{Int64}
     t2t::Matrix{Int64}
     t2n::Matrix{Int64}
-    t2e::Matrix{Int64}
 
-    d::Vector{Int64}
+    degrees::Vector{Int64}
     vertex_on_boundary::Vector{Bool}
-    edge_on_boundary::Vector{Bool}
 
     active_triangle::Vector{Bool}
-    active_edge::Vector{Bool}
     active_vertex::Vector{Bool}
 
     num_vertices::Int
-    num_edges::Int
     num_triangles::Int
 
     function Mesh(vertices, connectivity)
 
         num_triangles = size(connectivity, 2)
         num_vertices = size(vertices, 2)
-        
+
         @assert size(vertices, 1) == 2
         @assert size(connectivity, 1) == 3
 
-        t = Array(connectivity')
-        edges, boundary_edges, t2e = all_edges(t)
-        t2t, t2n = triangle_connectivity(t, t2e)
+        t2t, t2n = mkt2t(connectivity)
 
+        @assert size(t2t, 1) == 3
+        @assert size(t2n, 1) == 3
 
-        @assert size(t2t,1) == 3
-        @assert size(t2n,1) == 3
-        @assert size(edges,1) == 2
-
-        num_edges = size(edges, 2)
+        edges, bndix = all_edges(connectivity)
+        bnd_edges = edges[:, bndix]
         
-        edge_on_boundary = falses(num_edges)
-        edge_on_boundary[boundary_edges] .= true
-
-        boundary_vertex = boundary_vertices(edges, boundary_edges)
+        boundary_vertex = boundary_vertices(edges, bnd_edges)
         vertex_on_boundary = falses(num_vertices)
         vertex_on_boundary[boundary_vertex] .= true
 
-        num_boundary_vertices = length(boundary_vertex)
-        # @assert num_triangles + 3*num_vertices - 2 == num_edges
-
         degrees = vertex_degrees(edges, num_vertices)
 
-
-        triangle_buffer = 2*num_triangles
-        vertex_buffer = 2*num_vertices
+        triangle_buffer = 2 * num_triangles
+        vertex_buffer = 2 * num_vertices
 
         _vertices = zeros(2, vertex_buffer)
         _vertices[:, 1:num_vertices] .= vertices
@@ -159,14 +132,8 @@ mutable struct Mesh
         _t2n = zeros(3, triangle_buffer)
         _t2n[:, 1:num_triangles] .= t2n
 
-        _t2e = zeros(3, triangle_buffer)
-        _t2e[:, 1:num_triangles] .= t2e
-
         _degrees = zeros(Int, vertex_buffer)
         _degrees[1:num_vertices] .= degrees
-
-        _edges = zeros(Int, 2, 2*num_edges)
-        _edges[:, 1:num_edges] .= edges
 
         active_triangles = falses(triangle_buffer)
         active_triangles[1:num_triangles] .= true
@@ -176,27 +143,16 @@ mutable struct Mesh
         _vertex_on_boundary = falses(vertex_buffer)
         _vertex_on_boundary[1:num_vertices] .= vertex_on_boundary
 
-        active_edges = falses(2*num_edges)
-        active_edges[1:num_edges] .= true
-        _edge_on_boundary = falses(2*num_edges)
-        _edge_on_boundary[1:num_edges] .= edge_on_boundary
-
-
         return new(
             _vertices,
             _connectivity,
-            _edges,
             _t2t,
             _t2n,
-            _t2e,
             _degrees,
             _vertex_on_boundary,
-            _edge_on_boundary,
             active_triangles,
-            active_edges,
             active_vertices,
             num_vertices,
-            num_edges,
             num_triangles,
         )
     end
@@ -226,7 +182,7 @@ function has_neighbor(m::Mesh, tri, ver)
     if !is_active_triangle(m, tri)
         @warn "Triangle $tri is not active"
     end
-    return m.t2t[tri,ver] != 0
+    return m.t2t[tri, ver] != 0
 end
 
 function Base.show(io::IO, m::Mesh)
@@ -256,7 +212,15 @@ function active_vertices(mesh)
 end
 
 function active_connectivity(mesh)
-    return mesh.connectivity[:, mesh.active_triangles]
+    return mesh.connectivity[:, mesh.active_triangle]
+end
+
+function active_t2t(mesh)
+    return mesh.t2t[:, mesh.active_triangle]
+end
+
+function active_t2n(mesh)
+    return mesh.t2n[:, mesh.active_triangle]
 end
 
 function increment_degree!(m::Mesh, vertex_idx)
@@ -292,7 +256,7 @@ function insert_triangle!(m::Mesh, conn, t2t, t2n, t2e)
 end
 
 function insert_edge!(m::Mesh, source, target, on_boundary)
-    e = [min(source,target), max(source,target)]
+    e = [min(source, target), max(source, target)]
     m.edges = [m.edges; e']
     push!(m.active_edge, true)
     push!(m.edge_on_boundary, on_boundary)
@@ -301,44 +265,13 @@ end
 
 function delete_triangle!(m::Mesh, tri_idx)
     m.active_triangle[tri_idx] = false
-    m.t[tri_idx,:] .= 0
-    m.t2t[tri_idx,:] .= 0
-    m.t2n[tri_idx,:] .= 0
+    m.t[tri_idx, :] .= 0
+    m.t2t[tri_idx, :] .= 0
+    m.t2n[tri_idx, :] .= 0
     m.num_triangles -= 1
 end
 
 function delete_edge!(m::Mesh, edge_idx)
     m.active_edge[edge_idx] = false
     m.num_edges -= 1
-end
-
-function refine(p, t, edges, t2e)
-    np, dim = size(p)
-
-    # find the midpoint of each edge
-    pmid = (p[edges[:, 1], :] + p[edges[:, 2], :]) / 2
-    t1 = t[:, 1]
-    t2 = t[:, 2]
-    t3 = t[:, 3]
-    t23 = t2e[:, 1] .+ np
-    t31 = t2e[:, 2] .+ np
-    t12 = t2e[:, 3] .+ np
-
-    t = [
-        t1 t12 t31
-        t12 t23 t31
-        t2 t23 t12
-        t3 t31 t23
-    ]
-    p = [p; pmid]
-
-    return p, t
-end
-
-function refine(m::Mesh)
-    active_t = m.t[m.active_triangle, :]
-    active_e = m.edges[m.active_edge, :]
-    active_t2e = m.t2e[m.active_triangle, :]
-    p, t = refine(m.p, active_t, active_e, active_t2e)
-    return Mesh(p, t)
 end

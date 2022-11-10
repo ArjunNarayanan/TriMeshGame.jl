@@ -8,9 +8,11 @@ MP = MeshPlotter
 
 
 p, t = TM.template_circlemesh()
+p = Array(p')
+t = Array(t')
 mesh = TM.Mesh(p, t)
 
-MP.plot_mesh(TM.active_vertices(mesh), TM.active_connectivity(mesh)')
+# MP.plot_mesh(TM.active_vertices(mesh), TM.active_connectivity(mesh))
 
 # e, be, t2e = TM.all_edges(t)
 
