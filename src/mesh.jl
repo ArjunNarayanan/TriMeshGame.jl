@@ -194,20 +194,55 @@ function is_active_triangle(m::Mesh, tri)
     return m.active_triangle[tri]
 end
 
-function is_active_edge(m::Mesh, edgeid)
-    return m.active_edge[edgeid]
+function is_active_triangle_or_boundary(mesh, tri)
+    return tri == 0 || mesh.active_triangle[tri]
 end
 
 function degree(m::Mesh, vertex_idx)
     return m.d[vertex_idx]
 end
 
-function vertex(m::Mesh, tri_idx, ver_idx)
-    return m.t[tri_idx, ver_idx]
+function vertex(mesh::Mesh, local_vertex_idx, tri_idx)
+    @assert is_active_triangle(mesh, tri_idx)
+    return mesh.connectivity[local_vertex_idx, tri_idx]
+end
+
+function neighbor_triangle(mesh, local_vertex, triangle)
+    @assert is_active_triangle(mesh, triangle)
+    return mesh.t2t[local_vertex, triangle]
+end
+
+function neighbor_twin(mesh, local_vertex, triangle)
+    @assert is_active_triangle(mesh, triangle)
+    return mesh.t2n[local_vertex, triangle]
+end
+
+function is_active_vertex(mesh, vertex)
+    return mesh.active_vertex[vertex]
 end
 
 function active_degrees(mesh)
     return mesh.degrees[mesh.active_vertex]
+end
+
+function increment_degree!(mesh::Mesh, vertex_idx)
+    @assert is_active_vertex(mesh, vertex_idx)
+    mesh.degrees[vertex_idx] += 1
+end
+
+function increment_degree!(mesh::Mesh, local_vertex_idx, tri_idx)
+    @assert is_active_triangle(mesh, tri_idx)
+    increment_degree!(mesh, vertex(mesh, local_vertex_idx, tri_idx))
+end
+
+function decrement_degree!(mesh::Mesh, vertex_idx)
+    @assert is_active_vertex(mesh, vertex_idx)
+    mesh.degrees[vertex_idx] -= 1
+end
+
+function decrement_degree!(mesh::Mesh, local_vertex_idx, tri_idx)
+    @assert is_active_triangle(mesh, tri_idx)
+    decrement_degree!(mesh, vertex(mesh, local_vertex_idx, tri_idx))
 end
 
 function active_vertices(mesh)
@@ -222,24 +257,38 @@ function active_t2t(mesh)
     return mesh.t2t[:, mesh.active_triangle]
 end
 
+function set_t2t!(mesh, tri, new_t2t)
+    @assert all((is_active_triangle_or_boundary(mesh, t) for t in new_t2t))
+    mesh.t2t[:, tri] .= new_t2t
+end
+
+function set_neighbor_triangle_if_not_boundary!(mesh, local_vertex, triangle, nbr_triangle)
+    @assert is_active_triangle_or_boundary(mesh, triangle)
+    @assert is_active_triangle(mesh, nbr_triangle)
+    if triangle > 0
+        mesh.t2t[local_vertex, triangle] = nbr_triangle
+    end
+end
+
+function set_neighbor_twin_if_not_boundary!(mesh, local_vertex, triangle, nbr_twin)
+    @assert is_active_triangle_or_boundary(mesh, triangle)
+    @assert is_valid_local_vertex_index_or_boundary(nbr_twin)
+    if triangle > 0
+        mesh.t2n[local_vertex, triangle] = nbr_twin
+    end
+end
+
 function active_t2n(mesh)
     return mesh.t2n[:, mesh.active_triangle]
 end
 
-function increment_degree!(m::Mesh, vertex_idx)
-    m.d[vertex_idx] += 1
+function is_valid_local_vertex_index_or_boundary(index)
+    return any((index == i for i in (0,1,2,3)))
 end
 
-function increment_degree!(m::Mesh, tri_idx, ver_idx)
-    increment_degree!(m, vertex(m, tri_idx, ver_idx))
-end
-
-function decrement_degree!(m::Mesh, vertex_idx)
-    m.d[vertex_idx] -= 1
-end
-
-function decrement_degree!(m::Mesh, tri_idx, ver_idx)
-    decrement_degree!(m, vertex(m, tri_idx, ver_idx))
+function set_t2n!(mesh, tri, new_t2n)
+    @assert all((is_valid_local_vertex_index_or_boundary(i) for i in new_t2n))
+    mesh.t2n[:, tri] .= new_t2n
 end
 
 function insert_vertex!(m::Mesh, coords, deg, on_boundary)
