@@ -109,9 +109,8 @@ mutable struct Mesh
         @assert size(t2n, 1) == 3
 
         edges, bndix = all_edges(connectivity)
-        bnd_edges = edges[:, bndix]
         
-        boundary_vertex = boundary_vertices(edges, bnd_edges)
+        boundary_vertex = boundary_vertices(edges, bndix)
         vertex_on_boundary = falses(num_vertices)
         vertex_on_boundary[boundary_vertex] .= true
 
@@ -205,6 +204,10 @@ end
 
 function vertex(m::Mesh, tri_idx, ver_idx)
     return m.t[tri_idx, ver_idx]
+end
+
+function active_degrees(mesh)
+    return mesh.degrees[mesh.active_vertex]
 end
 
 function active_vertices(mesh)

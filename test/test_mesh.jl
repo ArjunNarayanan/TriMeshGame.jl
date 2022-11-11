@@ -27,24 +27,14 @@ t2n = repeat([0,3,2]',6)
 @test allequal(t2n',TM.active_t2n(mesh))
 
 d = [6,3,3,3,3,3,3]
-@test allequal(d,mesh.d)
+@test allequal(d,TM.active_degrees(mesh))
 
 node_on_boundary = [false,true,true,true,true,true,true]
-@test allequal(node_on_boundary,mesh.vertex_on_boundary)
+@test allequal(node_on_boundary,mesh.vertex_on_boundary[mesh.active_vertex])
 
-edge_on_boundary = falses(12)
-edge_on_boundary[[7,8,9,10,11,12]] .= true
-@test allequal(edge_on_boundary, mesh.edge_on_boundary)
-
-@test TM.num_edges(mesh) == 12
 @test TM.num_triangles(mesh) == 6
-@test all(mesh.active_triangle)
-@test all(mesh.active_edge)
+@test all(mesh.active_triangle[1:6])
+@test count(mesh.active_triangle) == 6
+@test all(mesh.active_vertex[1:7])
+@test count(mesh.active_vertex) == 7
 
-mesh = TM.circlemesh(0)
-mesh = TM.refine(mesh)
-@test TM.num_triangles(mesh) == 24
-
-# using MeshPlotter
-# f, a = MeshPlotter.plot_mesh(mesh, d0 = mesh.d)
-# f
