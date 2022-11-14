@@ -395,7 +395,42 @@ function delete_triangle!(mesh::Mesh, tri_idx)
     mesh.num_triangles -= 1
 end
 
-function delete_edge!(m::Mesh, edge_idx)
-    m.active_edge[edge_idx] = false
-    m.num_edges -= 1
+function reindex_vertices!(mesh)
+    vertex_buffer_size = vertex_buffer(mesh)
+    new_vertex_indices = zeros(Int, vertex_buffer_size)
+    num_verts = num_vertices(mesh)
+    active_verts = mesh.active_vertex
+    new_vertex_indices[active_verts] .= 1:num_verts
+    
+    num_extra_vertices = vertex_buffer_size - num_verts
+    mesh.vertices = zero_pad(active_vertices(mesh), num_extra_vertices)
+
+    active_conn = active_connectivity(mesh)
+    new_conn = [new_vertex_indices[v] for v in active_conn]
+    mesh.connectivity[:, mesh.active_triangle] .= new_conn
+
+    mesh.degrees = zero_pad(mesh.degrees[active_verts], num_extra_vertices)    
+    mesh.vertex_on_boundary = zero_pad(mesh.vertex_on_boundary[active_verts], num_extra_vertices)
+    mesh.active_vertex = zero_pad(trues(num_verts), num_extra_vertices)
+
+    return new_vertex_indices
+end
+
+function reindex_triangles!(mesh)
+    triangle_buffer_size = triangle_buffer(mesh)
+    new_triangle_indices = zeros(Int, triangle_buffer_size)
+    num_tris = num_triangles(mesh)
+    new_triangle_indices[mesh.active_triangle] .= 1:num_tris
+    num_extra_tris = triangle_buffer_size - num_tris
+
+    new_t2t = active_t2t(mesh)
+    new_t2t = [t > 0 ? new_triangle_indices[t] : 0 for t in new_t2t]
+    mesh.t2t = zero_pad(new_t2t, num_extra_tris)
+    
+    mesh.connectivity = zero_pad(active_connectivity(mesh), num_extra_tris)
+    mesh.t2n = zero_pad(active_t2n(mesh), num_extra_tris)
+
+    mesh.active_triangle = zero_pad(trues(num_tris), num_extra_tris)
+
+    return new_triangle_indices
 end

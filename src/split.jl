@@ -97,47 +97,58 @@ function update_neighboring_triangle!(mesh, tri, ver)
     end
 end
 
+function is_valid_boundary_split!(mesh, triangle, local_vertex_index; maxdegree = 9)
+    if !is_active_triangle(mesh, triangle)
+        return false
+    end
+
+    if has_neighbor(mesh, triangle, local_vertex_index)
+        return false
+    end
+
+    if degree(mesh, vertex(mesh, local_vertex_index, triangle)) >= maxdegree
+        return false
+    end
+
+    return true
+end
+
 function split_boundary_edge!(mesh, tri, ver)
-    @assert !has_neighbor(mesh, tri, ver)
-    @assert is_active_triangle(mesh, tri)
+    if !is_valid_boundary_split!(mesh, tri, ver)
+        return false
+    end
 
-    nt, nv, ne = total_num_triangles(mesh), num_vertices(mesh), total_num_edges(mesh)
+    T1, T2 = neighbor_triangle(mesh, next(ver), tri), neighbor_triangle(mesh, previous(ver), tri)
 
-    T1, T2 = mesh.t2t[tri, next(ver)], mesh.t2t[tri, previous(ver)]
-
-    v1, v2, v3 = mesh.t[tri, ver], mesh.t[tri, next(ver)], mesh.t[tri, previous(ver)]
-    new_ver_coords = 0.5 * (mesh.p[v2, :] + mesh.p[v3, :])
-    new_ver_idx = nv + 1
-    insert_vertex!(mesh, new_ver_coords, 3, true)
-
-    T3 = nt + 1
-    T4 = nt + 2
+    v1, v2, v3 = vertex(mesh, ver, tri), vertex(mesh, next(ver), tri), vertex(mesh, previous(ver), tri)
+    
+    new_ver_coords = new_vertex_coordinates(mesh, v2, v3)
+    new_ver_idx = insert_vertex!(mesh, new_ver_coords, 3, true)
 
     T3conn = [new_ver_idx, v1, v2]
     T4conn = [new_ver_idx, v3, v1]
 
+    T3 = insert_triangle!(mesh, T3conn)
+    T4 = insert_triangle!(mesh, T4conn)
+
     T3t2t = [T2, 0, T4]
     T4t2t = [T1, T3, 0]
 
-    T3t2n = [mesh.t2n[tri, previous(ver)], 0, 2]
-    T4t2n = [mesh.t2n[tri, next(ver)], 3, 0]
+    set_t2t!(mesh, T3, T3t2t)
+    set_t2t!(mesh, T4, T4t2t)
 
-    T3t2e = [mesh.t2e[tri, previous(ver)], ne + 2, ne + 1]
-    T4t2e = [mesh.t2e[tri, next(ver)], ne + 1, ne + 3]
-
-    insert_triangle!(mesh, T3conn, T3t2t, T3t2n, T3t2e)
-    insert_triangle!(mesh, T4conn, T4t2t, T4t2n, T4t2e)
+    T3t2n = [neighbor_twin(mesh, previous(ver), tri), 0, 2]
+    T4t2n = [neighbor_twin(mesh, next(ver), tri), 3, 0]
+    
+    set_t2n!(mesh, T3, T3t2n)
+    set_t2n!(mesh, T4, T4t2n)
 
     update_neighboring_triangle!(mesh, T3, 1)
     update_neighboring_triangle!(mesh, T4, 1)
-
-    insert_edge!(mesh, new_ver_idx, v1, false)
-    insert_edge!(mesh, new_ver_idx, v2, true)
-    insert_edge!(mesh, new_ver_idx, v3, true)
 
     increment_degree!(mesh, v1)
 
     delete_triangle!(mesh, tri)
 
-    delete_edge!(mesh, mesh.t2e[tri, ver])
+    return true
 end
