@@ -178,10 +178,14 @@ function total_num_triangles(m::Mesh)
 end
 
 function has_neighbor(m::Mesh, tri, ver)
-    if !is_active_triangle(m, tri)
-        @warn "Triangle $tri is not active"
+    @assert is_active_triangle(m, tri)
+    opp_tri = m.t2t[ver, tri]
+    if opp_tri > 0
+        @assert is_active_triangle(m, opp_tri)
+        return true
+    else
+        return false
     end
-    return m.t2t[tri, ver] != 0
 end
 
 function Base.show(io::IO, m::Mesh)
@@ -199,7 +203,7 @@ function is_active_triangle_or_boundary(mesh, tri)
 end
 
 function degree(m::Mesh, vertex_idx)
-    return m.d[vertex_idx]
+    return m.degrees[vertex_idx]
 end
 
 function vertex(mesh::Mesh, local_vertex_idx, tri_idx)

@@ -1,28 +1,28 @@
 using Test
-using Revise
+# using Revise
 using TriMeshGame
 include("useful_routines.jl")
 
 TM = TriMeshGame
 
 mesh = TM.circlemesh(0)
-@test !TM.isvalidflip(mesh,1,1)
-@test !TM.isvalidflip(mesh,2,1)
-@test !TM.isvalidflip(mesh,3,1)
-@test !TM.isvalidflip(mesh,4,1)
-@test !TM.isvalidflip(mesh,5,1)
-@test !TM.isvalidflip(mesh,6,1)
+@test !TM.is_valid_flip(mesh,1,1)
+@test !TM.is_valid_flip(mesh,2,1)
+@test !TM.is_valid_flip(mesh,3,1)
+@test !TM.is_valid_flip(mesh,4,1)
+@test !TM.is_valid_flip(mesh,5,1)
+@test !TM.is_valid_flip(mesh,6,1)
 
-@test TM.isvalidflip(mesh,1,2)
-@test TM.isvalidflip(mesh,1,3)
+@test TM.is_valid_flip(mesh,1,2)
+@test TM.is_valid_flip(mesh,1,3)
 
-@test !TM.isvalidflip(mesh,1,3,maxdegree=3)
-@test !TM.isvalidflip(mesh,1,2,maxdegree=3)
+@test !TM.is_valid_flip(mesh,1,3,maxdegree=3)
+@test !TM.is_valid_flip(mesh,1,2,maxdegree=3)
 
 @test TM.edgeflip!(mesh,1,2)
 @test TM.edgeflip!(mesh,4,2)
 @test TM.edgeflip!(mesh,6,3)
-@test !TM.isvalidflip(mesh,2,1)
+@test !TM.is_valid_flip(mesh,2,1)
 
 mesh = TM.circlemesh(0)
 @test TM.edgeflip!(mesh,1,Int32(2))

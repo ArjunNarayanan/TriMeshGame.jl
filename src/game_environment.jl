@@ -138,7 +138,7 @@ end
 function step_flip!(env, triangle, vertex, no_action_reward)
     old_score = env.current_score
     @assert is_active_triangle(env.mesh, triangle)
-    if isvalidflip(env.mesh, triangle, vertex)
+    if is_valid_flip(env.mesh, triangle, vertex)
         edgeflip!(env.mesh, triangle, vertex)
 
         update_env_after_step!(env)

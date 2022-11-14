@@ -1,5 +1,5 @@
 using Test
-# using Revise
+using Revise
 using TriMeshGame
 include("useful_routines.jl")
 
@@ -7,9 +7,12 @@ TM = TriMeshGame
 
 mesh = TM.circlemesh(0)
 
-points = copy(mesh.p)
-newp = 0.5*(points[1,:]+points[3,:])
-points = [points; newp']
+@test TM.is_valid_interior_split(mesh, 1, 2; maxdegree = 4)
+@test !TM.is_valid_interior_split(mesh, 1, 2; maxdegree = 3)
+
+points = copy(TM.active_vertices(mesh))
+newp = 0.5*(points[:,1]+points[:,3])
+points = [points newp]
 
 TM.split_interior_edge!(mesh, 1, 2)
 

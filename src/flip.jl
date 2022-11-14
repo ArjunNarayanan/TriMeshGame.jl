@@ -6,7 +6,7 @@ checks if a given edge can be flipped.
 a vertex in `t`. Returns true if the edge opposite to vertex `j` in triangle `t` can be flipped.
 """
 
-function isvalidflip(mesh, triangle, vertex; maxdegree = 9)
+function is_valid_flip(mesh, triangle, vertex; maxdegree = 9)
     if !is_active_triangle(mesh, triangle)
         return false
     end
@@ -161,7 +161,7 @@ end
 
 function edgeflip!(mesh::Mesh, tri, ver; maxdegree = 9)
 
-    if !isvalidflip(mesh, tri, ver, maxdegree = maxdegree)
+    if !is_valid_flip(mesh, tri, ver, maxdegree = maxdegree)
         return false
     end
     # Edge opposite local vertex ver in triangle tri will be flipped
