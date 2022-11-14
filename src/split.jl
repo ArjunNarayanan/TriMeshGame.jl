@@ -17,63 +17,67 @@ function is_valid_interior_split(mesh, triangle, local_vertex_index; maxdegree =
     return true
 end
 
-function split_interior_edge!(mesh, triangle, vertex)
-    if !is_valid_interior_split(mesh, triangle, vertex)
+function new_vertex_coordinates(mesh, v1, v2)
+    v1 = vertex_coordinates(mesh, v1)
+    v2 = vertex_coordinates(mesh, v2)
+    return 0.5*(v1+v2)
+end
+
+function split_interior_edge!(mesh, triangle, local_vertex_index; maxdegree = 9)
+    if !is_valid_interior_split(mesh, triangle, local_vertex_index, maxdegree = maxdegree)
         return false
     end
-    error("Incomplete")
 
-    opp_tri, opp_ver = mesh.t2t[triangle, vertex], mesh.t2n[triangle, vertex]
+    opp_tri, opp_ver = neighbor_triangle(mesh, local_vertex_index, triangle), neighbor_twin(mesh, local_vertex_index, triangle)
 
-    T2 = neighbor_triangle(mesh, next(vertex), triangle)
-    T3 = neighbor_triangle(mesh, previous(vertex), triangle)
+    T2 = neighbor_triangle(mesh, next(local_vertex_index), triangle)
+    T3 = neighbor_triangle(mesh, previous(local_vertex_index), triangle)
     T4 = neighbor_triangle(mesh, next(opp_ver), opp_tri)
     T5 = neighbor_triangle(mesh, previous(opp_ver), opp_tri)
 
-    v1, v2, v3, v4 = mesh.t[triangle, vertex], mesh.t[triangle, next(vertex)], mesh.t[opp_tri, opp_ver], mesh.t[triangle, previous(vertex)]
-    new_ver_coords = 0.5 * (mesh.p[v2, :] + mesh.p[v4, :])
-    new_ver_idx = nv + 1
-    insert_vertex!(mesh, new_ver_coords, 4, false)
-
-    T6 = nt + 1
-    T7 = nt + 2
-    T8 = nt + 3
-    T9 = nt + 4
+    v1 = vertex(mesh, local_vertex_index, triangle)
+    v2 = vertex(mesh, next(local_vertex_index), triangle)
+    v3 = vertex(mesh, opp_ver, opp_tri)
+    v4 = vertex(mesh, previous(local_vertex_index), triangle)
+    
+    new_ver_coords = new_vertex_coordinates(mesh, v2, v4)
+    
+    new_ver_idx = insert_vertex!(mesh, new_ver_coords, 4, false)
 
     T6conn = [new_ver_idx, v1, v2]
     T7conn = [new_ver_idx, v2, v3]
     T8conn = [new_ver_idx, v3, v4]
     T9conn = [new_ver_idx, v4, v1]
+    
+    T6 = insert_triangle!(mesh, T6conn)
+    T7 = insert_triangle!(mesh, T7conn)
+    T8 = insert_triangle!(mesh, T8conn)
+    T9 = insert_triangle!(mesh, T9conn)
 
     T6t2t = [T3, T7, T9]
     T7t2t = [T4, T8, T6]
     T8t2t = [T5, T9, T7]
     T9t2t = [T2, T6, T8]
 
-    T6t2n = [mesh.t2n[triangle, previous(vertex)], 3, 2]
-    T7t2n = [mesh.t2n[opp_tri, next(opp_ver)], 3, 2]
-    T8t2n = [mesh.t2n[opp_tri, previous(opp_ver)], 3, 2]
-    T9t2n = [mesh.t2n[triangle, next(vertex)], 3, 2]
+    set_t2t!(mesh, T6, T6t2t)
+    set_t2t!(mesh, T7, T7t2t)
+    set_t2t!(mesh, T8, T8t2t)
+    set_t2t!(mesh, T9, T9t2t)
 
-    T6t2e = [mesh.t2e[triangle, previous(vertex)], ne + 2, ne + 1]
-    T7t2e = [mesh.t2e[opp_tri, next(opp_ver)], ne + 3, ne + 2]
-    T8t2e = [mesh.t2e[opp_tri, previous(opp_ver)], ne + 4, ne + 3]
-    T9t2e = [mesh.t2e[triangle, next(vertex)], ne + 1, ne + 4]
+    T6t2n = [neighbor_twin(mesh, previous(local_vertex_index), triangle), 3, 2]
+    T7t2n = [neighbor_twin(mesh, next(opp_ver), opp_tri), 3, 2]
+    T8t2n = [neighbor_twin(mesh, previous(opp_ver), opp_tri), 3, 2]
+    T9t2n = [neighbor_twin(mesh, next(local_vertex_index), triangle), 3, 2]
 
-    insert_triangle!(mesh, T6conn, T6t2t, T6t2n, T6t2e)
-    insert_triangle!(mesh, T7conn, T7t2t, T7t2n, T7t2e)
-    insert_triangle!(mesh, T8conn, T8t2t, T8t2n, T8t2e)
-    insert_triangle!(mesh, T9conn, T9t2t, T9t2n, T9t2e)
+    set_t2n!(mesh, T6, T6t2n)
+    set_t2n!(mesh, T7, T7t2n)
+    set_t2n!(mesh, T8, T8t2n)
+    set_t2n!(mesh, T9, T9t2n)
 
     update_neighboring_triangle!(mesh, T6, 1)
     update_neighboring_triangle!(mesh, T7, 1)
     update_neighboring_triangle!(mesh, T8, 1)
     update_neighboring_triangle!(mesh, T9, 1)
-
-    insert_edge!(mesh, new_ver_idx, v1, false)
-    insert_edge!(mesh, new_ver_idx, v2, false)
-    insert_edge!(mesh, new_ver_idx, v3, false)
-    insert_edge!(mesh, new_ver_idx, v4, false)
 
     increment_degree!(mesh, v1)
     increment_degree!(mesh, v3)
@@ -81,14 +85,15 @@ function split_interior_edge!(mesh, triangle, vertex)
     delete_triangle!(mesh, triangle)
     delete_triangle!(mesh, opp_tri)
 
-    delete_edge!(mesh, mesh.t2e[triangle, vertex])
+    return true
 end
 
-function update_neighboring_triangle!(m, tri, ver)
-    opp_tri, opp_ver = m.t2t[tri, ver], m.t2n[tri, ver]
+function update_neighboring_triangle!(mesh, tri, ver)
+    opp_tri, opp_ver = neighbor_triangle(mesh, ver, tri), neighbor_twin(mesh, ver, tri)
+
     if opp_tri != 0 && opp_ver != 0
-        m.t2t[opp_tri, opp_ver] = tri
-        m.t2n[opp_tri, opp_ver] = ver
+        set_t2t!(mesh, opp_ver, opp_tri, tri)
+        set_t2n!(mesh, opp_ver, opp_tri, ver)
     end
 end
 

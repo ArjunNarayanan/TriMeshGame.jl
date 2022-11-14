@@ -43,7 +43,7 @@ function cycle_edges(x)
 end
 
 function zero_pad(m)
-    return [m zeros(Int, size(m, 1))]
+    return zero_pad(m, 1)
 end
 
 mutable struct GameEnv

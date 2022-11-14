@@ -95,7 +95,13 @@ mutable struct Mesh
     num_vertices::Int
     num_triangles::Int
 
-    function Mesh(vertices, connectivity)
+    new_vertex_pointer
+    new_triangle_pointer
+
+    growth_factor
+
+    function Mesh(vertices, connectivity; growth_factor = 2)
+        @assert growth_factor > 1
 
         num_triangles = size(connectivity, 2)
         num_vertices = size(vertices, 2)
@@ -142,6 +148,9 @@ mutable struct Mesh
         _vertex_on_boundary = falses(vertex_buffer)
         _vertex_on_boundary[1:num_vertices] .= vertex_on_boundary
 
+        new_vertex_pointer = num_vertices+1
+        new_triangle_pointer = num_triangles+1
+
         return new(
             _vertices,
             _connectivity,
@@ -153,6 +162,9 @@ mutable struct Mesh
             active_vertices,
             num_vertices,
             num_triangles,
+            new_vertex_pointer,
+            new_triangle_pointer,
+            growth_factor
         )
     end
 end
@@ -161,20 +173,21 @@ function num_vertices(m::Mesh)
     return m.num_vertices
 end
 
-function num_edges(m::Mesh)
-    return m.num_edges
-end
-
-function total_num_edges(m::Mesh)
-    return size(m.edges, 1)
-end
 
 function num_triangles(m::Mesh)
     return m.num_triangles
 end
 
-function total_num_triangles(m::Mesh)
-    return size(m.t, 1)
+function vertex_buffer(m::Mesh)
+    return size(m.vertices, 2)
+end
+
+function triangle_buffer(mesh)
+    return size(mesh.connectivity, 2)
+end
+
+function growth_factor(mesh)
+    return mesh.growth_factor
 end
 
 function has_neighbor(m::Mesh, tri, ver)
@@ -209,6 +222,10 @@ end
 function vertex(mesh::Mesh, local_vertex_idx, tri_idx)
     @assert is_active_triangle(mesh, tri_idx)
     return mesh.connectivity[local_vertex_idx, tri_idx]
+end
+
+function vertex_coordinates(mesh, vertex_idx)
+    return mesh.vertices[:, vertex_idx]
 end
 
 function neighbor_triangle(mesh, local_vertex, triangle)
@@ -262,8 +279,16 @@ function active_t2t(mesh)
 end
 
 function set_t2t!(mesh, tri, new_t2t)
+    @assert is_active_triangle(mesh, tri)
     @assert all((is_active_triangle_or_boundary(mesh, t) for t in new_t2t))
     mesh.t2t[:, tri] .= new_t2t
+end
+
+function set_t2t!(mesh, ver, tri, t2t)
+    @assert is_active_triangle(mesh, tri)
+    @assert is_active_triangle_or_boundary(mesh, t2t)
+
+    mesh.t2t[ver, tri] = t2t
 end
 
 function set_neighbor_triangle_if_not_boundary!(mesh, local_vertex, triangle, nbr_triangle)
@@ -290,41 +315,84 @@ function is_valid_local_vertex_index_or_boundary(index)
     return any((index == i for i in (0,1,2,3)))
 end
 
+function set_t2n!(mesh, ver, tri, t2n)
+    @assert is_active_triangle(mesh, tri)
+    @assert is_valid_local_vertex_index_or_boundary(t2n)
+    mesh.t2n[ver, tri] = t2n
+end
+
 function set_t2n!(mesh, tri, new_t2n)
+    @assert is_active_triangle(mesh, tri)
     @assert all((is_valid_local_vertex_index_or_boundary(i) for i in new_t2n))
     mesh.t2n[:, tri] .= new_t2n
 end
 
-function insert_vertex!(m::Mesh, coords, deg, on_boundary)
-    m.p = [m.p; coords']
-    push!(m.d, deg)
-    push!(m.vertex_on_boundary, on_boundary)
-    m.num_vertices += 1
+function expand_vertices!(mesh)
+    vb = vertex_buffer(mesh)
+    new_vert_buff_size = growth_factor(mesh) * vb
+    num_new_entries = new_vert_buff_size - vb
+
+    mesh.vertices = zero_pad(mesh.vertices, num_new_entries)
+    mesh.degrees = zero_pad(mesh.degrees, num_new_entries)
+    mesh.vertex_on_boundary = zero_pad(mesh.vertex_on_boundary, num_new_entries)
+    mesh.active_vertex = zero_pad(mesh.active_vertex, num_new_entries)
 end
 
-function insert_triangle!(m::Mesh, conn, t2t, t2n, t2e)
-    m.t = [m.t; conn']
-    m.t2t = [m.t2t; t2t']
-    m.t2n = [m.t2n; t2n']
-    m.t2e = [m.t2e; t2e']
-    push!(m.active_triangle, true)
-    m.num_triangles += 1
+function insert_vertex!(mesh::Mesh, coords, deg, on_boundary)
+    new_idx = mesh.new_vertex_pointer
+
+    if new_idx > vertex_buffer(mesh)
+        expand_vertices!(mesh)
+    end
+    @assert new_idx <= vertex_buffer(mesh)
+
+    mesh.vertices[:, new_idx] .= coords
+    mesh.degrees[new_idx] = deg
+    mesh.vertex_on_boundary[new_idx] = on_boundary
+    mesh.active_vertex[new_idx] = true
+
+    mesh.num_vertices += 1
+    mesh.new_vertex_pointer += 1
+    return new_idx
 end
 
-function insert_edge!(m::Mesh, source, target, on_boundary)
-    e = [min(source, target), max(source, target)]
-    m.edges = [m.edges; e']
-    push!(m.active_edge, true)
-    push!(m.edge_on_boundary, on_boundary)
-    m.num_edges += 1
+function expand_triangles!(mesh)
+    tri_buff = triangle_buffer(mesh)
+    new_tri_buff_size = growth_factor(mesh) * tri_buff
+    num_new_entries = new_tri_buff_size - tri_buff
+
+    mesh.connectivity = zero_pad(mesh.connectivity, num_new_entries)
+    mesh.t2t = zero_pad(mesh.t2t, num_new_entries)
+    mesh.t2n = zero_pad(mesh.t2n, num_new_entries)
+    mesh.active_triangle = zero_pad(mesh.active_triangle, num_new_entries)
 end
 
-function delete_triangle!(m::Mesh, tri_idx)
-    m.active_triangle[tri_idx] = false
-    m.t[tri_idx, :] .= 0
-    m.t2t[tri_idx, :] .= 0
-    m.t2n[tri_idx, :] .= 0
-    m.num_triangles -= 1
+function insert_triangle!(mesh::Mesh, conn, t2t = (0,0,0), t2n = (0,0,0))
+    new_idx = mesh.new_triangle_pointer
+    if new_idx > triangle_buffer(mesh)
+        expand_triangles!(mesh)
+    end
+    @assert new_idx <= triangle_buffer(mesh)
+
+    mesh.connectivity[:, new_idx] .= conn
+    mesh.t2t[:, new_idx] .= t2t
+    mesh.t2n[:, new_idx] .= t2n
+    mesh.active_triangle[new_idx] = true
+    
+    mesh.num_triangles += 1
+    mesh.new_triangle_pointer += 1
+
+    return new_idx
+end
+
+function delete_triangle!(mesh::Mesh, tri_idx)
+    @assert is_active_triangle(mesh, tri_idx)
+
+    mesh.active_triangle[tri_idx] = false
+    mesh.connectivity[:, tri_idx] .= 0
+    mesh.t2t[:, tri_idx] .= 0
+    mesh.t2n[:, tri_idx] .= 0
+    mesh.num_triangles -= 1
 end
 
 function delete_edge!(m::Mesh, edge_idx)
