@@ -1,7 +1,7 @@
 function make_template(mesh)
     pairs = make_edge_pairs(mesh)
 
-    tri_vertices = reshape(mesh.t', 1, :)
+    tri_vertices = reshape(mesh.connectivity, 1, :)
 
     ct = cycle_edges(tri_vertices)
 
@@ -17,13 +17,13 @@ function make_template(mesh)
 end
 
 function make_edge_pairs(mesh)
-    total_nt = total_num_triangles(mesh)
+    total_nt = triangle_buffer(mesh)
     pairs = zeros(Int, 3total_nt)
     nbr_idx = 3total_nt + 1
     for triangle = 1:total_nt
         for vertex = 1:3
             index = (triangle - 1) * 3 + vertex
-            opp_tri, opp_ver = mesh.t2t[triangle, vertex], mesh.t2n[triangle, vertex]
+            opp_tri, opp_ver = mesh.t2t[vertex, triangle], mesh.t2n[vertex, triangle]
             pairs[index] = opp_tri == 0 ? nbr_idx : (opp_tri - 1) * 3 + opp_ver
         end
     end
@@ -82,8 +82,15 @@ function check_terminated(env::GameEnv)
 end
 
 function GameEnv(mesh0, d0, max_actions)
+    @assert length(d0) == num_vertices(mesh0)
+    @assert max_actions > 0
+
     mesh = deepcopy(mesh0)
-    vertex_score = mesh.d - d0
+
+    num_extra_vertices = vertex_buffer(mesh) - num_vertices(mesh)
+    exp_d0 = zero_pad(d0, num_extra_vertices)
+
+    vertex_score = mesh.degrees - exp_d0
     template = make_template(mesh)
     num_actions = 0
     initial_score = global_score(vertex_score)
@@ -93,7 +100,7 @@ function GameEnv(mesh0, d0, max_actions)
     is_terminated = check_terminated(num_actions, max_actions, current_score, opt_score)
     GameEnv(
         mesh,
-        copy(d0),
+        exp_d0,
         vertex_score,
         template,
         max_actions,

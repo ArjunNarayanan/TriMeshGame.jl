@@ -9,13 +9,13 @@ mesh = TM.circlemesh(0)
 TM.split_interior_edge!(mesh, 1, 2)
 
 
-tri_vertices = reshape(mesh.t',1,:)
+tri_vertices = reshape(mesh.connectivity[:,1:10],1,:)
 test_tri_vertices = [0 0 0 0 0 0 1 4 5 1 5 6 1 6 7 1 7 2 8 2 3 8 3 4 8 4 1 8 1 2]
 @test allequal(test_tri_vertices, tri_vertices)
 
 pairs = TM.make_edge_pairs(mesh)
-test_pairs = [0, 0, 0, 0, 0, 0, 0, 12, 25, 0, 15, 8, 0, 18, 11, 0, 28, 14, 0, 24, 29, 0, 27, 20, 9, 30, 23, 17, 21, 26]
-test_pairs[test_pairs .== 0] .= 31
+test_pairs = [0, 0, 0, 0, 0, 0, 0, 12, 25, 0, 15, 8, 0, 18, 11, 0, 28, 14, 0, 24, 29, 0, 27, 20, 9, 30, 23, 17, 21, 26, 0, 0, 0, 0, 0, 0]
+test_pairs[test_pairs .== 0] .= 37
 @test allequal(test_pairs, pairs)
 
 template = TM.make_template(mesh)
@@ -34,13 +34,13 @@ test_template_11 = [3,7,4,8,1,6,13,5,0,0,0,0]
 
 
 mesh = TM.circlemesh(0)
-d0 = copy(mesh.d)
+d0 = TM.active_degrees(mesh)
 TM.split_interior_edge!(mesh, 1, 2)
 push!(d0, 6)
 env = TM.GameEnv(mesh, d0, 10)
 
-@test allequal(env.d0, d0)
-@test allequal(env.vertex_score, [0, 1, 0, 1, 0, 0, 0, -2])
+@test allequal(env.d0[mesh.active_vertex], d0)
+@test allequal(env.vertex_score[mesh.active_vertex], [0, 1, 0, 1, 0, 0, 0, -2])
 @test env.max_actions == 10
 @test env.num_actions == 0
 @test env.initial_score == 4

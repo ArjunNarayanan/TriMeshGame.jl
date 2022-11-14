@@ -23,6 +23,9 @@ function test_mesh_for_template()
          14 13 16]
     p = rand(16,2)
 
+    t = Array(t')
+    p = Array(p')
+
     mesh = TriMeshGame.Mesh(p, t)
 
     return mesh
