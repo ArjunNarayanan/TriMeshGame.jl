@@ -97,7 +97,7 @@ function update_neighboring_triangle!(mesh, tri, ver)
     end
 end
 
-function is_valid_boundary_split!(mesh, triangle, local_vertex_index; maxdegree = 9)
+function is_valid_boundary_split(mesh, triangle, local_vertex_index; maxdegree = 9)
     if !is_active_triangle(mesh, triangle)
         return false
     end
@@ -114,7 +114,7 @@ function is_valid_boundary_split!(mesh, triangle, local_vertex_index; maxdegree 
 end
 
 function split_boundary_edge!(mesh, tri, ver)
-    if !is_valid_boundary_split!(mesh, tri, ver)
+    if !is_valid_boundary_split(mesh, tri, ver)
         return false
     end
 

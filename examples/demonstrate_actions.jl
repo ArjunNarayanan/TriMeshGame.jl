@@ -54,8 +54,34 @@ fig.savefig("examples/figures/circlemesh-2.png")
 
 ##
 mesh = TM.circlemesh(0)
-fig = plot_verbose(mesh)
+fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
+fig.savefig("examples/figures/circlemesh-0.png")
 TM.edgeflip!(mesh, 5, 2)
-fig = plot_verbose(mesh)
+fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
 fig.savefig("examples/figures/flip-example.png")
+##
+
+##
+mesh = TM.circlemesh(0)
+TM.edgeflip!(mesh, 5, 2)
+TM.edgeflip!(mesh, 5, 2)
+fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
+fig.savefig("examples/figures/double-flip.png")
+##
+
+##
+mesh = TM.circlemesh(0)
+TM.split_boundary_edge!(mesh, 4, 1)
+TM.reindex_vertices!(mesh)
+TM.reindex_triangles!(mesh)
+fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
+fig.savefig("examples/figures/split-boundary.png")
+##
+
+##
+TM.split_interior_edge!(mesh, 4, 2)
+TM.reindex_vertices!(mesh)
+TM.reindex_triangles!(mesh)
+fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
+fig.savefig("examples/figures/split-interior.png")
 ##

@@ -88,7 +88,7 @@ julia> TM.active_vertex_degrees(mesh)
  3
 ```
 
-You can use the `circlemesh(num_ref)` function to create a uniform circular mesh where `num_ref` controls the refinement level,
+You can use the `circlemesh(num_ref)` function to create a uniform circular mesh where `num_ref` controls the refinement level. This is mainly for testing and debugging.
 
 ```julia
 mesh = TM.circlemesh(2)
@@ -114,5 +114,48 @@ fig = plot_verbose(mesh)
 
 <img src="examples/figures/circlemesh-0.png" alt="drawing" width="400"/> <img src="examples/figures/flip-example.png" alt="drawing" width="400"/>
 
+Notice that we flipped half-edge 2 in triangle 5. This is the half-edge opposite local vertex 2 in triangle 5 which is the directed edge from vertex 7 to vertex 1. `edgeflip!` always rotates half-edges counter-clockwise. Starting from an initial mesh, if we flip the same half-edge twice, we obtain a mesh that is topologically equivalent to the original mesh, however, the indexing of this mesh will be different.
 
-Starting from an initial mesh, if we flip the same half-edge twice we come back to the 
+```julia
+mesh = TM.circlemesh(0)
+fig = plot_verbose(mesh)
+```
+
+<img src="examples/figures/circlemesh-0.png" alt="drawing" width="600"/>
+
+```julia
+TM.edgeflip!(mesh, 5, 2)
+TM.edgeflip!(mesh, 5, 2)
+fig = plot_verbose(mesh)
+```
+
+<img src="examples/figures/double-flip.png" alt="drawing" width="600"/>
+
+Notice that after flipping the same half-edge twice, element 5 is now above element 6. The two meshes are topologically equivalent.
+
+You can use the `is_valid_flip(mesh, triangle_index, local_half_edge_index; maxdegree = 9)` to check if a particular flip is possible or not. For example you cannot flip boundary edges. Flipping an edge changes the degree of vertices. If flipping an edge results in a vertex attaining degree greater than `maxdegree`, `is_valid_flip` will return `false`.
+
+## Edge Split
+
+A triangle can be split across any of its edges to create two new triangles. If the edge is in the interior, the neighboring triangle must also be split. We provide two functions `split_interior_edge!(mesh, triangle_index, local_half_edge_index)` and `split_boundary_edge!(mesh, triangle_index, local_half_edge_index)` with corresponding `is_valid_interior_split` and `is_valid_boundary_split` methods.
+
+Splitting a half-edge results in deleting the associated triangles and creating new triangles and vertices for the split. `TriMeshGame` does this by keeping track of active triangles and active vertices. In order to plot the resulting mesh, we need to reindex the mesh. Here's an example
+
+```julia
+mesh = TM.circlemesh(0)
+TM.split_boundary_edge!(mesh, 4, 1)
+TM.reindex_vertices!(mesh)
+TM.reindex_triangles!(mesh)
+plot_verbose(mesh)
+```
+
+<img src="examples/figures/split-boundary.png" alt="drawing" width="600"/>
+
+```julia
+TM.split_interior_edge!(mesh, 4, 2)
+TM.reindex_vertices!(mesh)
+TM.reindex_triangles!(mesh)
+plot_verbose(mesh)
+```
+
+<img src="examples/figures/split-interior.png" alt="drawing" width="600"/>
