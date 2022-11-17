@@ -1,20 +1,61 @@
+using Revise
 using TriMeshGame
 using MeshPlotter
 TM = TriMeshGame
 MP = MeshPlotter
 
-points = [-1. 0.
-           0. -1.
-           1. 0.
-           0. 1.]
-connectivity = [1  2  4
-                2  3  4]
-mesh = TM.Mesh(points, connectivity)
 
-fig, ax = MP.plot_mesh(mesh)
-fig
 
-TM.edgeflip!(mesh, 1, 1)
+##
+s = sqrt(3)/2
+vertices = [0.0  1.0  0.5   -0.5  -1.0  -0.5  0.5
+            0.0  0.0  s      s     0.0  -s    -s]
 
-fig, ax = MP.plot_mesh(mesh)
-fig
+connectivity = [1  1  1  1  1  1
+                3  4  5  6  7  2
+                4  5  6  7  2  3]
+
+mesh = TM.Mesh(vertices, connectivity)
+fig = MP.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_triangle_connectivity(mesh), number_vertices = true, number_elements = true, internal_order = true)
+fig.tight_layout()
+fig.savefig("examples/figures/hex_mesh.png")
+##
+
+##
+t2t = TM.active_triangle_t2t(mesh)
+##
+
+##
+t2n = TM.active_triangle_t2n(mesh)
+##
+
+##
+TM.active_vertex_degrees(mesh)
+##
+
+function plot_verbose(mesh; fontsize = 15, vertex_size = 20)
+    fig = MP.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_triangle_connectivity(mesh), number_vertices = true,
+    number_elements = true, internal_order = true, fontsize = fontsize, vertex_size = vertex_size)
+    fig.tight_layout()
+    return fig
+end
+
+##
+mesh = TM.circlemesh(0)
+fig = plot_verbose(mesh)
+fig.savefig("examples/figures/circlemesh-0.png")
+##
+
+##
+mesh = TM.circlemesh(2)
+fig = plot_verbose(mesh, fontsize = 10, vertex_size = 15)
+fig.savefig("examples/figures/circlemesh-2.png")
+##
+
+##
+mesh = TM.circlemesh(0)
+fig = plot_verbose(mesh)
+TM.edgeflip!(mesh, 5, 2)
+fig = plot_verbose(mesh)
+fig.savefig("examples/figures/flip-example.png")
+##

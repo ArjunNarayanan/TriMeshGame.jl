@@ -246,6 +246,10 @@ function active_degrees(mesh)
     return mesh.degrees[mesh.active_vertex]
 end
 
+function active_vertex_degrees(mesh)
+    return active_degrees(mesh)
+end
+
 function increment_degree!(mesh::Mesh, vertex_idx)
     @assert is_active_vertex(mesh, vertex_idx)
     mesh.degrees[vertex_idx] += 1
@@ -266,16 +270,20 @@ function decrement_degree!(mesh::Mesh, local_vertex_idx, tri_idx)
     decrement_degree!(mesh, vertex(mesh, local_vertex_idx, tri_idx))
 end
 
-function active_vertices(mesh)
+function active_vertex_coordinates(mesh)
     return mesh.vertices[:, mesh.active_vertex]
 end
 
-function active_connectivity(mesh)
+function active_triangle_connectivity(mesh)
     return mesh.connectivity[:, mesh.active_triangle]
 end
 
 function active_t2t(mesh)
     return mesh.t2t[:, mesh.active_triangle]
+end
+
+function active_triangle_t2t(mesh)
+    return active_t2t(mesh)
 end
 
 function set_t2t!(mesh, tri, new_t2t)
@@ -309,6 +317,10 @@ end
 
 function active_t2n(mesh)
     return mesh.t2n[:, mesh.active_triangle]
+end
+
+function active_triangle_t2n(mesh)
+    return active_t2n(mesh)
 end
 
 function is_valid_local_vertex_index_or_boundary(index)
@@ -403,9 +415,9 @@ function reindex_vertices!(mesh)
     new_vertex_indices[active_verts] .= 1:num_verts
     
     num_extra_vertices = vertex_buffer_size - num_verts
-    mesh.vertices = zero_pad(active_vertices(mesh), num_extra_vertices)
+    mesh.vertices = zero_pad(active_vertex_coordinates(mesh), num_extra_vertices)
 
-    active_conn = active_connectivity(mesh)
+    active_conn = active_triangle_connectivity(mesh)
     new_conn = [new_vertex_indices[v] for v in active_conn]
     mesh.connectivity[:, mesh.active_triangle] .= new_conn
 
@@ -427,7 +439,7 @@ function reindex_triangles!(mesh)
     new_t2t = [t > 0 ? new_triangle_indices[t] : 0 for t in new_t2t]
     mesh.t2t = zero_pad(new_t2t, num_extra_tris)
     
-    mesh.connectivity = zero_pad(active_connectivity(mesh), num_extra_tris)
+    mesh.connectivity = zero_pad(active_triangle_connectivity(mesh), num_extra_tris)
     mesh.t2n = zero_pad(active_t2n(mesh), num_extra_tris)
 
     mesh.active_triangle = zero_pad(trues(num_tris), num_extra_tris)

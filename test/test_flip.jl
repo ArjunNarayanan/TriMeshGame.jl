@@ -35,7 +35,7 @@ testconn = [2 3 4
             1 5 6
             1 6 7
             1 7 2]
-@test allequal(testconn', TM.active_connectivity(mesh))
+@test allequal(testconn', TM.active_triangle_connectivity(mesh))
 test_tri_conn = [0 2 0
                  3 6 1
                  0 4 2

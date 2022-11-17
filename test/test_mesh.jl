@@ -13,7 +13,7 @@ t = [1 2 3
      1 5 6
      1 6 7
      1 7 2]
-@test allequal(t',TM.active_connectivity(mesh))
+@test allequal(t',TM.active_triangle_connectivity(mesh))
 
 t2t = [0 2 6
        0 3 1

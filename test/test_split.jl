@@ -10,14 +10,14 @@ mesh = TM.circlemesh(0)
 @test TM.is_valid_interior_split(mesh, 1, 2; maxdegree = 4)
 @test !TM.is_valid_interior_split(mesh, 1, 2; maxdegree = 3)
 
-points = copy(TM.active_vertices(mesh))
+points = copy(TM.active_vertex_coordinates(mesh))
 newp = 0.5*(points[:,1]+points[:,3])
 points = [points newp]
 
 @test TM.split_interior_edge!(mesh, 1, 2)
 
 @test TM.num_triangles(mesh) == 8
-@test allapprox(points, TM.active_vertices(mesh))
+@test allapprox(points, TM.active_vertex_coordinates(mesh))
 
 testconn = [0 0 0
             0 0 0
@@ -133,4 +133,4 @@ ver_on_bdry[[2,3,4,5,6,7,8]] .= true
 # TM.split_boundary_edge!(mesh, 5, 1)
 # TM.reindex_vertices!(mesh)
 # TM.reindex_triangles!(mesh)
-# MeshPlotter.plot_mesh(TM.active_vertices(mesh), TM.active_connectivity(mesh))
+# MeshPlotter.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_connectivity(mesh))
