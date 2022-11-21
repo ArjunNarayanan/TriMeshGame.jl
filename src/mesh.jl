@@ -215,8 +215,14 @@ function is_active_triangle_or_boundary(mesh, tri)
     return tri == 0 || mesh.active_triangle[tri]
 end
 
-function degree(m::Mesh, vertex_idx)
-    return m.degrees[vertex_idx]
+function degree(mesh::Mesh, vertex_idx)
+    @assert is_active_vertex(mesh, vertex_idx)
+    return mesh.degrees[vertex_idx]
+end
+
+function set_degree!(mesh, vertex_idx, deg)
+    @assert is_active_vertex(mesh, vertex_idx)
+    mesh.degrees[vertex_idx] = deg
 end
 
 function vertex(mesh::Mesh, local_vertex_idx, tri_idx)
@@ -225,8 +231,25 @@ function vertex(mesh::Mesh, local_vertex_idx, tri_idx)
 end
 
 function vertex_coordinates(mesh, vertex_idx)
+    @assert is_active_vertex(mesh, vertex_idx)
     return mesh.vertices[:, vertex_idx]
 end
+
+function set_vertex_coordinates!(mesh, vertex_idx, coords)
+    @assert is_active_vertex(mesh, vertex_idx)
+    mesh.vertices[:, vertex_idx] .= coords
+end
+
+function vertex_on_boundary(mesh, vertex_idx)
+    @assert is_active_vertex(mesh, vertex_idx)
+    return mesh.vertex_on_boundary[vertex_idx]
+end
+
+function set_vertex_on_boundary!(mesh, vertex_idx, on_boundary)
+    @assert is_active_vertex(mesh, vertex_idx)
+    mesh.vertex_on_boundary[vertex_idx] = on_boundary
+end
+
 
 function neighbor_triangle(mesh, local_vertex, triangle)
     @assert is_active_triangle(mesh, triangle)
@@ -265,6 +288,11 @@ function decrement_degree!(mesh::Mesh, vertex_idx)
     mesh.degrees[vertex_idx] -= 1
 end
 
+function replace_index_in_connectivity(mesh, old_index, new_index)
+    conn = mesh.connectivity
+    conn[conn .== old_index] .= new_index
+end
+
 function decrement_degree!(mesh::Mesh, local_vertex_idx, tri_idx)
     @assert is_active_triangle(mesh, tri_idx)
     decrement_degree!(mesh, vertex(mesh, local_vertex_idx, tri_idx))
@@ -299,19 +327,27 @@ function set_t2t!(mesh, ver, tri, t2t)
     mesh.t2t[ver, tri] = t2t
 end
 
+function set_neighbor_triangle!(mesh, vertex_idx, triangle_idx, nbr_triangle_idx)
+    @assert is_active_triangle(mesh, triangle_idx)
+    @assert is_active_triangle_or_boundary(mesh, nbr_triangle_idx)
+    mesh.t2t[vertex_idx, triangle_idx] = nbr_triangle_idx
+end
+
 function set_neighbor_triangle_if_not_boundary!(mesh, local_vertex, triangle, nbr_triangle)
-    @assert is_active_triangle_or_boundary(mesh, triangle)
-    @assert is_active_triangle(mesh, nbr_triangle)
-    if triangle > 0
-        mesh.t2t[local_vertex, triangle] = nbr_triangle
+    if local_vertex > 0 && triangle > 0
+        set_neighbor_triangle!(mesh, local_vertex, triangle, nbr_triangle)
     end
 end
 
-function set_neighbor_twin_if_not_boundary!(mesh, local_vertex, triangle, nbr_twin)
-    @assert is_active_triangle_or_boundary(mesh, triangle)
+function set_neighbor_twin!(mesh, vertex_idx, triangle_idx, nbr_twin)
+    @assert is_active_triangle(mesh, triangle_idx)
     @assert is_valid_local_vertex_index_or_boundary(nbr_twin)
-    if triangle > 0
-        mesh.t2n[local_vertex, triangle] = nbr_twin
+    mesh.t2n[vertex_idx, triangle_idx] = nbr_twin
+end
+
+function set_neighbor_twin_if_not_boundary!(mesh, local_vertex, triangle, nbr_twin)
+    if local_vertex > 0 && triangle > 0
+        set_neighbor_twin!(mesh, local_vertex, triangle, nbr_twin)
     end
 end
 
@@ -407,6 +443,13 @@ function delete_triangle!(mesh::Mesh, tri_idx)
     mesh.num_triangles -= 1
 end
 
+function delete_vertex!(mesh, vertex_idx)
+    @assert is_active_vertex(mesh, vertex_idx)
+    mesh.active_vertex[vertex_idx] = false
+    mesh.degrees[vertex_idx] = 0
+    mesh.num_vertices -= 1
+end
+
 function reindex_vertices!(mesh)
     vertex_buffer_size = vertex_buffer(mesh)
     new_vertex_indices = zeros(Int, vertex_buffer_size)
@@ -445,4 +488,14 @@ function reindex_triangles!(mesh)
     mesh.active_triangle = zero_pad(trues(num_tris), num_extra_tris)
 
     return new_triangle_indices
+end
+
+function reindex!(mesh)
+    reindex_vertices!(mesh)
+    reindex_triangles!(mesh)
+end
+
+function averagesmoothing!(mesh::Mesh)
+    boundary_nodes = findall(mesh.vertex_on_boundary)
+    mesh.vertices = averagesmoothing(mesh.vertices, mesh.connectivity, mesh.t2t, mesh.active_triangle, boundary_nodes)
 end

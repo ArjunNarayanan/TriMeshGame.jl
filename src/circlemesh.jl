@@ -35,11 +35,6 @@ function averagesmoothing!(p, edges, active_edges, bnd_nodes, numiter)
     end
 end
 
-function averagesmoothing!(mesh, numiter)
-    bnd_ver = findall(mesh.vertex_on_boundary)
-    averagesmoothing!(mesh.p, mesh.edges, mesh.active_edge, bnd_ver, numiter)
-end
-
 function all_edges_with_t2e(t)
     edgemap = [2 3; 3 1; 1 2]
     etag = vcat(t[:, edgemap[1, :]], t[:, edgemap[2, :]], t[:, edgemap[3, :]])
