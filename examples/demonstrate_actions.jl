@@ -72,16 +72,43 @@ fig.savefig("examples/figures/double-flip.png")
 ##
 mesh = TM.circlemesh(0)
 TM.split_boundary_edge!(mesh, 4, 1)
-TM.reindex_vertices!(mesh)
-TM.reindex_triangles!(mesh)
+TM.reindex!(mesh)
 fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
 fig.savefig("examples/figures/split-boundary.png")
 ##
 
 ##
 TM.split_interior_edge!(mesh, 4, 2)
-TM.reindex_vertices!(mesh)
-TM.reindex_triangles!(mesh)
+TM.reindex!(mesh)
 fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
 fig.savefig("examples/figures/split-interior.png")
+##
+
+##
+mesh = TM.circlemesh(0)
+TM.collapse!(mesh, 6, 3)
+fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
+fig.tight_layout()
+fig.savefig("examples/figures/collapse-simple.png")
+##
+
+##
+mesh = TM.circlemesh(0)
+TM.split_interior_edge!(mesh, 5, 2)
+TM.collapse!(mesh, 9, 3)
+TM.reindex!(mesh)
+fig = plot_verbose(mesh, fontsize = 30, vertex_size = 35)
+fig.savefig("examples/figures/split-collapse.png")
+##
+
+
+##
+mesh = TM.circlemesh(1)
+fig = MP.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_triangle_connectivity(mesh))
+# fig.savefig("examples/figures/ideal-mesh.png")
+TM.random_actions!(mesh, 5)
+TM.reindex!(mesh)
+TM.averagesmoothing!(mesh)
+fig = MP.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_triangle_connectivity(mesh))
+fig.savefig("examples/figures/bad-connectivity-mesh.png")
 ##

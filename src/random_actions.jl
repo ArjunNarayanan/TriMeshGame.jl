@@ -2,25 +2,27 @@ function random_actions!(mesh, num_actions)
     counter = 0
 
     while counter < num_actions
-        nt = total_num_triangles(mesh)
+        tri = rand(findall(mesh.active_triangle))
 
-        tri = rand(1:nt)
+        edge = rand(1:3)
+        type = rand(1:3)
+        flag = false
 
-        if is_active_triangle(mesh, tri)
-            edge = rand(1:3)
-            split = rand(Bool)
-            if split
-                if has_neighbor(mesh, tri, edge)
-                    split_interior_edge!(mesh, tri, edge)
-                    counter += 1
-                end
-            else
-                flag = edgeflip!(mesh, tri, edge)
-                if flag
-                    counter += 1
-                end
-            end
+        if type == 1 # flip edge
+            flag = edgeflip!(mesh, tri, edge)
+            println("Flipping $tri, $edge succeeded $flag")
+        elseif type == 2 && has_neighbor(mesh, tri, edge)
+            println("Splitting $tri, $edge succeeded $flag")
+            flag = split_interior_edge!(mesh, tri, edge)
+        else # collapse edge
+            flag = collapse!(mesh, tri, edge)
+            println("Collapsing $tri, #edge succeeded $flag")
         end
+
+        if flag
+            counter += 1
+        end
+
     end
 end
 

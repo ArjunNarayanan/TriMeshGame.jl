@@ -144,8 +144,7 @@ Splitting a half-edge results in deleting the associated triangles and creating 
 ```julia
 mesh = TM.circlemesh(0)
 TM.split_boundary_edge!(mesh, 4, 1)
-TM.reindex_vertices!(mesh)
-TM.reindex_triangles!(mesh)
+TM.reindex!(mesh)
 plot_verbose(mesh)
 ```
 
@@ -153,9 +152,49 @@ plot_verbose(mesh)
 
 ```julia
 TM.split_interior_edge!(mesh, 4, 2)
-TM.reindex_vertices!(mesh)
-TM.reindex_triangles!(mesh)
+TM.reindex!(mesh)
 plot_verbose(mesh)
 ```
 
 <img src="examples/figures/split-interior.png" alt="drawing" width="600"/>
+
+## Edge Collapse
+
+An interior edge can be collapsed by deleting the two adjacent triangles and merging the end-points of the deleted edge to form a valid triangulation. Since a vertex gets deleted in the process, collapsing an edge triggers a global re-indexing of the connectivity matrix. It is possible to perform this re-indexing purely locally using the half-edge information, however for simplicity we currently perform a global re-indexing. The syntax is `collapse!(mesh, triangle_index, local_half_edge_index)`.
+
+Here's an example,
+
+```julia
+mesh = TM.circlemesh(0)
+TM.collapse!(mesh, 6, 3)
+plot_verbose(mesh)
+```
+
+<img src="examples/figures/collapse-simple.png" alt="drawing" width="600"/>
+
+As in the case of splits, we may need to reindex the mesh since triangles and vertices get deleted in the collapse process. Here's a more complex example,
+
+```julia
+mesh = TM.circlemesh(0)
+TM.split_interior_edge!(mesh, 5, 2)
+TM.collapse!(mesh, 9, 3)
+TM.reindex!(mesh)
+fig = plot_verbose(mesh)
+```
+
+<img src="examples/figures/split-collapse.png" alt="drawing" width="600"/>
+
+Notice that the result of the above split-collapse is equivalent to a single edge-flip.
+
+# Game Environment
+
+The above is starting to sound a little bit like a game. We have a board (or an _environment_) which is our mesh. We have _actions_ corresponding to flips, splits, and collapses. But what is our objective?
+
+Most people would prefer the mesh on the left to the mesh on the right.
+
+<img src="examples/figures/ideal-mesh.png" alt="drawing" width="400"/> <img src="examples/figures/bad-connectivity-mesh.png" alt="drawing" width="400"/>
+
+The connectivity of a mesh has an effect on __mesh quality__. For triangular meshes with uniformly sized elements, it is desirable to have a degree (or valence) of 6 for vertices in the interior of the mesh. The degree of vertices on the boundary depends on the angle enclosed by the two incident edges. (Typically, you would like to divide the enclosed angle sufficient times to bring the angle close to 60 degrees.)
+
+The objective function of our game is to minimize the number of vertices with irregular valence. `MeshPlotter` helps with visualizing irregular vertices.
+

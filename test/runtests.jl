@@ -13,6 +13,10 @@ end
     include("test_split.jl")
 end
 
+@testset "Test Collapse" begin
+    include("test_collapse.jl")
+end
+
 @testset "Test Game Env" begin
     include("test_game_env.jl")
 end
