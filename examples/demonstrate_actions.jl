@@ -16,6 +16,7 @@ connectivity = [1  1  1  1  1  1
                 4  5  6  7  2  3]
 
 mesh = TM.Mesh(vertices, connectivity)
+
 fig = MP.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_triangle_connectivity(mesh), number_vertices = true, number_elements = true, internal_order = true)
 fig.tight_layout()
 fig.savefig("examples/figures/hex_mesh.png")
@@ -111,4 +112,32 @@ TM.reindex!(mesh)
 TM.averagesmoothing!(mesh)
 fig = MP.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_triangle_connectivity(mesh))
 fig.savefig("examples/figures/bad-connectivity-mesh.png")
+##
+
+function random_actions!(env, num_actions)
+    counter = 0
+
+    while counter < num_actions
+        tri = rand(findall(env.mesh.active_triangle))
+        edge = rand(1:3)
+        type = rand(1:3)
+
+        success = TM.step!(env, tri, edge, type)
+        if success
+            counter += 1
+        end
+    end
+end
+
+
+##
+mesh = TM.circlemesh(0)
+d0 = TM.active_degrees(mesh)
+env = TM.GameEnv(mesh, d0, 10)
+TM.step_flip!(env, 1, 2, -4)
+TM.step_split!(env, 3, 1, -4)
+TM.reindex!(env)
+fig = MP.plot_mesh(TM.active_vertex_coordinates(env.mesh), TM.active_triangle_connectivity(env.mesh),
+vertex_score = TM.active_vertex_score(env))
+# fig.savefig("examples/figures/vertex-score-example.png")
 ##

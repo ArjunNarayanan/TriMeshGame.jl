@@ -50,7 +50,7 @@ mutable struct GameEnv
     mesh::Mesh
     d0::Vector{Int}
     vertex_score::Vector{Int}
-    template::Matrix{Int}
+    edge_pairs::Vector{Int}
     max_actions::Any
     num_actions::Any
     initial_score::Any
@@ -91,7 +91,8 @@ function GameEnv(mesh0, d0, max_actions)
     exp_d0 = zero_pad(d0, num_extra_vertices)
 
     vertex_score = mesh.degrees - exp_d0
-    template = make_template(mesh)
+    edge_pairs = make_edge_pairs(mesh)
+    
     num_actions = 0
     initial_score = global_score(vertex_score)
     current_score = initial_score
@@ -102,7 +103,7 @@ function GameEnv(mesh0, d0, max_actions)
         mesh,
         exp_d0,
         vertex_score,
-        template,
+        edge_pairs,
         max_actions,
         num_actions,
         initial_score,
@@ -111,6 +112,10 @@ function GameEnv(mesh0, d0, max_actions)
         reward,
         is_terminated,
     )
+end
+
+function active_vertex_score(env)
+    return env.vertex_score[env.mesh.active_vertex]
 end
 
 function Base.show(io::IO, env::GameEnv)
@@ -128,68 +133,142 @@ end
 """
 function step!(env, triangle, vertex, type; no_action_reward=-4)
     if type == 1
-        step_flip!(env, triangle, vertex, no_action_reward)
+        return step_flip!(env, triangle, vertex, no_action_reward)
     elseif type == 2
-        step_split!(env, triangle, vertex, no_action_reward)
+        return step_split!(env, triangle, vertex, no_action_reward)
+    elseif type == 3
+        return step_collapse!(env, triangle, vertex, no_action_reward)
     else
-        error("Expected type ∈ {1,2} got type = $type")
+        error("Expected type ∈ {1,2,3} got type = $type")
     end
 end
 
 function update_env_after_step!(env)
-    env.vertex_score = env.mesh.d - env.d0
-    env.template = make_template(env.mesh)
+    old_score = env.current_score
+    env.vertex_score = env.mesh.degrees - env.d0
+    env.edge_pairs = make_edge_pairs(env.mesh)
     env.current_score = global_score(env.vertex_score)
+    env.reward = old_score - env.current_score
 end
 
 function step_flip!(env, triangle, vertex, no_action_reward)
-    old_score = env.current_score
     @assert is_active_triangle(env.mesh, triangle)
+    # @assert !env.is_terminated
+    success = false
+
     if is_valid_flip(env.mesh, triangle, vertex)
-        edgeflip!(env.mesh, triangle, vertex)
-
+        @assert edgeflip!(env.mesh, triangle, vertex)
         update_env_after_step!(env)
-        env.reward = old_score - env.current_score
+        success = true
     else
         env.reward = no_action_reward
     end
     env.num_actions += 1
     env.is_terminated = check_terminated(env)
+    return success
 end
 
-function step_split!(env, triangle, vertex, no_action_reward; new_vertex_degree=6)
-    old_score = env.current_score
-    if is_active_triangle(env.mesh, triangle) && has_neighbor(env.mesh, triangle, vertex)
-        split_interior_edge!(env.mesh, triangle, vertex)
-
-        push!(env.d0, new_vertex_degree)
-        update_env_after_step!(env)
-        env.reward = old_score - env.current_score
-    else
-        env.reward = no_action_reward
+function synchronize_desired_degree_size!(env)
+    vertex_buffer_size = size(env.mesh.vertices, 2)
+    if vertex_buffer_size > length(env.d0)
+        num_new_vertices = vertex_buffer_size - length(env.d0)
+        env.d0 = zero_pad(env.d0, num_new_vertices)
     end
-    env.num_actions += 1
-    env.is_terminated = check_terminated(env)
 end
 
-function step_split_allow_boundary!(env, triangle, vertex, no_action_reward, new_vertex_degree)
-    old_score = env.current_score
+function step_interior_split!(env, triangle, vertex, no_action_reward, new_vertex_degree = 6)
     @assert is_active_triangle(env.mesh, triangle)
+    # @assert !env.is_terminated
+    @assert has_neighbor(env.mesh, triangle, vertex)
+    success = false
 
-    if has_neighbor(env.mesh, triangle, vertex)
-        split_interior_edge!(env.mesh, triangle, vertex)
+    if is_valid_interior_split(env.mesh, triangle, vertex)
+        new_vertex_idx = env.mesh.new_vertex_pointer
+
+        @assert split_interior_edge!(env.mesh, triangle, vertex)
+        synchronize_desired_degree_size!(env)
+
+        env.d0[new_vertex_idx] = new_vertex_degree
+        update_env_after_step!(env)
+        success = true
     else
-        split_boundary_edge!(env.mesh, triangle, vertex)
+        env.reward = no_action_reward
     end
-    push!(env.d0, new_vertex_degree)
-    update_env_after_step!(env)
-    env.reward = old_score - env.current_score
     env.num_actions += 1
     env.is_terminated = check_terminated(env)
+    return success
 end
 
-function step_no_action!(env, no_action_reward)
-    env.reward = no_action_reward
+function step_boundary_split!(env, triangle, vertex, no_action_reward, new_vertex_degree = 4)
+    @assert is_active_triangle(env.mesh, triangle)
+    # @assert !env.is_terminated
+    @assert !has_neighbor(env.mesh, triangle, vertex)
+    success = false
+
+    if is_valid_boundary_split(env.mesh, triangle, vertex)
+        new_vertex_idx = env.mesh.new_vertex_pointer
+
+        @assert split_boundary_edge!(env.mesh, triangle, vertex)
+        synchronize_desired_degree_size!(env)
+
+        env.d0[new_vertex_idx] = new_vertex_degree
+        update_env_after_step!(env)
+        success = true
+    else
+        env.reward = no_action_reward
+    end
     env.num_actions += 1
     env.is_terminated = check_terminated(env)
+
+    return success
+end
+
+function step_split!(env, triangle, vertex, no_action_reward; new_interior_vertex_degree = 6, new_boundary_vertex_degree = 4)
+    if has_neighbor(env.mesh, triangle, vertex)
+        return step_interior_split!(env, triangle, vertex, no_action_reward, new_interior_vertex_degree)
+    else
+        return step_boundary_split!(env, triangle, vertex, no_action_reward, new_boundary_vertex_degree)
+    end
+end
+
+function step_collapse!(env, triangle, vertex_idx, no_action_reward)
+    @assert is_active_triangle(env.mesh, triangle)
+    # @assert !env.is_terminated
+    success = false
+
+    if is_valid_collapse(env.mesh, triangle, vertex_idx)
+        _, l2, l3 = next_cyclic_vertices(vertex_idx)
+        v2, v3 = (vertex(env.mesh, l, triangle) for l in (l2, l3))
+        env.d0[v2] = env.d0[v3]
+        
+        @assert collapse!(env.mesh, triangle, vertex_idx)
+        update_env_after_step!(env)
+        success = true
+    else
+        env.reward = no_action_reward
+    end
+    env.num_actions += 1
+    env.is_terminated = check_terminated(env)
+
+    return success
+end
+
+function reindexed_desired_degree(old_desired_degree, new_vertex_indices, buffer_size)
+    new_desired_degree = zeros(Int, buffer_size)
+    for (old_idx, desired_degree) in enumerate(old_desired_degree)
+        new_idx = new_vertex_indices[old_idx]
+        if new_idx > 0
+            new_desired_degree[new_idx] = desired_degree
+        end
+    end
+    return new_desired_degree
+end
+
+function reindex!(env::GameEnv)
+    reindex_triangles!(env.mesh)
+    new_vertex_indices = reindex_vertices!(env.mesh)
+    vertex_buffer_size = vertex_buffer(env.mesh)
+    env.d0 = reindexed_desired_degree(env.d0, new_vertex_indices, vertex_buffer_size)
+    env.vertex_score = env.mesh.degrees - env.d0
+    env.edge_pairs = make_edge_pairs(env.mesh)
 end

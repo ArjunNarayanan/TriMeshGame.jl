@@ -490,7 +490,7 @@ function reindex_triangles!(mesh)
     return new_triangle_indices
 end
 
-function reindex!(mesh)
+function reindex!(mesh::Mesh)
     reindex_vertices!(mesh)
     reindex_triangles!(mesh)
 end

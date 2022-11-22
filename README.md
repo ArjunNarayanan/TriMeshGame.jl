@@ -196,5 +196,17 @@ Most people would prefer the mesh on the left to the mesh on the right.
 
 The connectivity of a mesh has an effect on __mesh quality__. For triangular meshes with uniformly sized elements, it is desirable to have a degree (or valence) of 6 for vertices in the interior of the mesh. The degree of vertices on the boundary depends on the angle enclosed by the two incident edges. (Typically, you would like to divide the enclosed angle sufficient times to bring the angle close to 60 degrees.)
 
-The objective function of our game is to minimize the number of vertices with irregular valence. `MeshPlotter` helps with visualizing irregular vertices.
+The objective function of our game is to minimize the number of vertices with irregular valence. `MeshPlotter` helps with visualizing irregular vertices. Here's an example,
 
+```julia
+mesh = TM.circlemesh(0)
+d0 = TM.active_degrees(mesh)
+env = TM.GameEnv(mesh, d0, 10)
+TM.step_flip!(env, 1, 2, -4)
+TM.step_split!(env, 3, 1, -4)
+TM.reindex!(env)
+MP.plot_mesh(TM.active_vertex_coordinates(env.mesh), TM.active_triangle_connectivity(env.mesh),
+vertex_score = TM.active_vertex_score(env))
+```
+
+<img src="examples/figures/vertex-score-example.png" alt="drawing" width="600"/>
