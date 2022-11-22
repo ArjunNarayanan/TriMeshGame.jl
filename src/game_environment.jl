@@ -151,9 +151,9 @@ function update_env_after_step!(env)
     env.reward = old_score - env.current_score
 end
 
-function step_flip!(env, triangle, vertex, no_action_reward)
+function step_flip!(env, triangle, vertex; no_action_reward = -4)
     @assert is_active_triangle(env.mesh, triangle)
-    # @assert !env.is_terminated
+    @assert !env.is_terminated
     success = false
 
     if is_valid_flip(env.mesh, triangle, vertex)
@@ -176,9 +176,9 @@ function synchronize_desired_degree_size!(env)
     end
 end
 
-function step_interior_split!(env, triangle, vertex, no_action_reward, new_vertex_degree = 6)
+function step_interior_split!(env, triangle, vertex; no_action_reward = -4, new_vertex_degree = 6)
     @assert is_active_triangle(env.mesh, triangle)
-    # @assert !env.is_terminated
+    @assert !env.is_terminated
     @assert has_neighbor(env.mesh, triangle, vertex)
     success = false
 
@@ -199,9 +199,9 @@ function step_interior_split!(env, triangle, vertex, no_action_reward, new_verte
     return success
 end
 
-function step_boundary_split!(env, triangle, vertex, no_action_reward, new_vertex_degree = 4)
+function step_boundary_split!(env, triangle, vertex; no_action_reward = -4, new_vertex_degree = 4)
     @assert is_active_triangle(env.mesh, triangle)
-    # @assert !env.is_terminated
+    @assert !env.is_terminated
     @assert !has_neighbor(env.mesh, triangle, vertex)
     success = false
 
@@ -223,17 +223,17 @@ function step_boundary_split!(env, triangle, vertex, no_action_reward, new_verte
     return success
 end
 
-function step_split!(env, triangle, vertex, no_action_reward; new_interior_vertex_degree = 6, new_boundary_vertex_degree = 4)
+function step_split!(env, triangle, vertex; no_action_reward = -4, new_interior_vertex_degree = 6, new_boundary_vertex_degree = 4)
     if has_neighbor(env.mesh, triangle, vertex)
-        return step_interior_split!(env, triangle, vertex, no_action_reward, new_interior_vertex_degree)
+        return step_interior_split!(env, triangle, vertex, no_action_reward = no_action_reward, new_vertex_degree = new_interior_vertex_degree)
     else
-        return step_boundary_split!(env, triangle, vertex, no_action_reward, new_boundary_vertex_degree)
+        return step_boundary_split!(env, triangle, vertex, no_action_reward = no_action_reward, new_vertex_degree = new_boundary_vertex_degree)
     end
 end
 
-function step_collapse!(env, triangle, vertex_idx, no_action_reward)
+function step_collapse!(env, triangle, vertex_idx; no_action_reward = -4)
     @assert is_active_triangle(env.mesh, triangle)
-    # @assert !env.is_terminated
+    @assert !env.is_terminated
     success = false
 
     if is_valid_collapse(env.mesh, triangle, vertex_idx)

@@ -11,6 +11,11 @@ This package implements connectivity editing operations on Triangular Meshes. A 
 A triangular mesh can be defined by providing the coordinates of vertices and the connectivity of each triangle. As an example, let's create a simple hexagonal mesh,
 
 ```julia
+using TriMeshGame
+using MeshPlotter
+TM = TriMeshGame
+MP = MeshPlotter
+
 s = sqrt(3)/2
 vertices = [0.0  1.0  0.5   -0.5  -1.0  -0.5  0.5
             0.0  0.0  s      s     0.0  -s    -s]
@@ -194,19 +199,47 @@ Most people would prefer the mesh on the left to the mesh on the right.
 
 <img src="examples/figures/ideal-mesh.png" alt="drawing" width="400"/> <img src="examples/figures/bad-connectivity-mesh.png" alt="drawing" width="400"/>
 
-The connectivity of a mesh has an effect on __mesh quality__. For triangular meshes with uniformly sized elements, it is desirable to have a degree (or valence) of 6 for vertices in the interior of the mesh. The degree of vertices on the boundary depends on the angle enclosed by the two incident edges. (Typically, you would like to divide the enclosed angle sufficient times to bring the angle close to 60 degrees.)
+The connectivity of a mesh has an effect on __mesh quality__. For triangular meshes with uniformly sized elements, it is desirable to have a degree (or valence) of 6 for vertices in the interior of the mesh. The degree of vertices on the boundary depends on the angle enclosed by the two incident edges. Typically, you would like to divide the enclosed angle sufficient times to bring the angle close to 60 degrees. For example, if the enclosed angle is 180 degrees, you would like the valence to be 4.
 
 The objective function of our game is to minimize the number of vertices with irregular valence. `MeshPlotter` helps with visualizing irregular vertices. Here's an example,
 
 ```julia
 mesh = TM.circlemesh(0)
-d0 = TM.active_degrees(mesh)
-env = TM.GameEnv(mesh, d0, 10)
-TM.step_flip!(env, 1, 2, -4)
-TM.step_split!(env, 3, 1, -4)
-TM.reindex!(env)
-MP.plot_mesh(TM.active_vertex_coordinates(env.mesh), TM.active_triangle_connectivity(env.mesh),
-vertex_score = TM.active_vertex_score(env))
+desired_degree = TM.active_degrees(mesh)
+TM.edgeflip!(mesh, 1, 2)
+vertex_score = desired_degree - TM.active_degrees(mesh)
+MP.plot_mesh(TM.active_vertex_coordinates(mesh), TM.active_triangle_connectivity(mesh), vertex_score = vertex_score)
 ```
 
 <img src="examples/figures/vertex-score-example.png" alt="drawing" width="600"/>
+
+
+The quality of a mesh, in terms of its connectivity, can be boiled down to a single number as the sum of the absolute vertex scores `score = sum(abs.(vertex_score))`. We can try to optimize the connectivity of the mesh by driving down this score to zero. Note that all our actions are _zero sum_ i.e. `sum(vertex_score)` is the same before and after any action. Thus, we have a lower bound on our score metric since `abs(sum(vertex_score)) <= sum(abs.(vertex_score))`. I don't know if you can always achieve this optimum, but it is helpful to measure how well we are doing.
+
+To deal with this setup, we provide a `GameEnv` with constructor `GameEnv(mesh, desired_degree, max_actions)`.
+
+```julia
+julia> mesh = TM.circlemesh(0);
+
+julia> desired_degree = [5,3,3,2,3,4,2];
+
+julia> env = TM.GameEnv(mesh, desired_degree, 10)
+GameEnv
+   num actions : 0
+   max actions : 10
+   score       : 4
+   opt score   : 2
+   terminated  : false
+```
+
+The `GameEnv` keeps track of a few things for you. 
+
+- `env.num_action` : the number of actions taken so far
+- `env.current_score` : equal to `sum(abs.(env.vertex_score))`
+- `env.opt_score` : the optimum score equal to `abs(sum(env.vertex_score))`
+- `env.reward` : the reward for the previous action equal to the difference between `env.current_score` before and after the action.
+- `env.is_terminated` : whether or not the environment is terminated. The `GameEnv` is said to be terminal if the number of actions exceeds `env.max_actions` or `env.current_score == env.opt_score`.
+
+You can perform all the actions discussed above on the `GameEnv`, using the syntax `step_flip!(env, triangle_index, half_edge_index)`, `step_interior_split!(env, triangle_index, half_edge_index)`, `step_boundary_split!(env, triangle_index, half_edge_index)`, `ste_split!(env, triangle_index, half_edge_index)` (`TriMeshGame` will infer if the edge is interior or boundary), and `step_collapse!(env, triangle_index, half_edge_index)`. All of these functions accept a keyword argument `no_action_reward` -- if the requested action is not valid, the environment records this value as the reward. 
+
+You've probably guessed that the language here is reminiscent of Reinforcement Learning. That is indeed the idea! The half-edge datastructure stores topological information. An agent can be trained to determine the appropriate action to be taken in order to improve the connectivity of the mesh. This is precisely what I implement in my other package [ProximalPolicyOptimization.jl](https://github.com/ArjunNarayanan/ProximalPolicyOptimization.jl) which uses the [proximal policy optimization](https://openai.com/blog/openai-baselines-ppo/) algorithm to learn to play `TriMeshGame`!
