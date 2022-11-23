@@ -50,7 +50,6 @@ mutable struct GameEnv
     mesh::Mesh
     d0::Vector{Int}
     vertex_score::Vector{Int}
-    edge_pairs::Vector{Int}
     max_actions::Any
     num_actions::Any
     initial_score::Any
@@ -91,7 +90,6 @@ function GameEnv(mesh0, d0, max_actions)
     exp_d0 = zero_pad(d0, num_extra_vertices)
 
     vertex_score = mesh.degrees - exp_d0
-    edge_pairs = make_edge_pairs(mesh)
     
     num_actions = 0
     initial_score = global_score(vertex_score)
@@ -103,7 +101,6 @@ function GameEnv(mesh0, d0, max_actions)
         mesh,
         exp_d0,
         vertex_score,
-        edge_pairs,
         max_actions,
         num_actions,
         initial_score,
@@ -133,11 +130,11 @@ end
 """
 function step!(env, triangle, vertex, type; no_action_reward=-4)
     if type == 1
-        return step_flip!(env, triangle, vertex, no_action_reward)
+        return step_flip!(env, triangle, vertex, no_action_reward = no_action_reward)
     elseif type == 2
-        return step_split!(env, triangle, vertex, no_action_reward)
+        return step_split!(env, triangle, vertex, no_action_reward = no_action_reward)
     elseif type == 3
-        return step_collapse!(env, triangle, vertex, no_action_reward)
+        return step_collapse!(env, triangle, vertex, no_action_reward = no_action_reward)
     else
         error("Expected type ∈ {1,2,3} got type = $type")
     end
@@ -146,14 +143,22 @@ end
 function update_env_after_step!(env)
     old_score = env.current_score
     env.vertex_score = env.mesh.degrees - env.d0
-    env.edge_pairs = make_edge_pairs(env.mesh)
     env.current_score = global_score(env.vertex_score)
     env.reward = old_score - env.current_score
 end
 
-function step_flip!(env, triangle, vertex; no_action_reward = -4)
+function pre_step_checks(env, triangle, vertex)
     @assert is_active_triangle(env.mesh, triangle)
     @assert !env.is_terminated
+end
+
+function post_step_updates!(env)
+    env.num_actions += 1
+    env.is_terminated = check_terminated(env)
+end
+
+function step_flip!(env, triangle, vertex; no_action_reward = -4)
+    pre_step_checks(env, triangle, vertex)
     success = false
 
     if is_valid_flip(env.mesh, triangle, vertex)
@@ -163,8 +168,8 @@ function step_flip!(env, triangle, vertex; no_action_reward = -4)
     else
         env.reward = no_action_reward
     end
-    env.num_actions += 1
-    env.is_terminated = check_terminated(env)
+    post_step_updates!(env)
+
     return success
 end
 
@@ -177,8 +182,8 @@ function synchronize_desired_degree_size!(env)
 end
 
 function step_interior_split!(env, triangle, vertex; no_action_reward = -4, new_vertex_degree = 6)
-    @assert is_active_triangle(env.mesh, triangle)
-    @assert !env.is_terminated
+    pre_step_checks(env, triangle, vertex)
+
     @assert has_neighbor(env.mesh, triangle, vertex)
     success = false
 
@@ -194,14 +199,14 @@ function step_interior_split!(env, triangle, vertex; no_action_reward = -4, new_
     else
         env.reward = no_action_reward
     end
-    env.num_actions += 1
-    env.is_terminated = check_terminated(env)
+    post_step_updates!(env)
+
     return success
 end
 
 function step_boundary_split!(env, triangle, vertex; no_action_reward = -4, new_vertex_degree = 4)
-    @assert is_active_triangle(env.mesh, triangle)
-    @assert !env.is_terminated
+    pre_step_checks(env, triangle, vertex)
+
     @assert !has_neighbor(env.mesh, triangle, vertex)
     success = false
 
@@ -217,8 +222,7 @@ function step_boundary_split!(env, triangle, vertex; no_action_reward = -4, new_
     else
         env.reward = no_action_reward
     end
-    env.num_actions += 1
-    env.is_terminated = check_terminated(env)
+    post_step_updates!(env)
 
     return success
 end
@@ -232,8 +236,8 @@ function step_split!(env, triangle, vertex; no_action_reward = -4, new_interior_
 end
 
 function step_collapse!(env, triangle, vertex_idx; no_action_reward = -4)
-    @assert is_active_triangle(env.mesh, triangle)
-    @assert !env.is_terminated
+    pre_step_checks(env, triangle, vertex)
+
     success = false
 
     if is_valid_collapse(env.mesh, triangle, vertex_idx)
@@ -247,8 +251,7 @@ function step_collapse!(env, triangle, vertex_idx; no_action_reward = -4)
     else
         env.reward = no_action_reward
     end
-    env.num_actions += 1
-    env.is_terminated = check_terminated(env)
+    post_step_updates!(env)
 
     return success
 end
