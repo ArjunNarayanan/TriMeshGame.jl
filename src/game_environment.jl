@@ -157,6 +157,11 @@ function post_step_updates!(env)
     env.is_terminated = check_terminated(env)
 end
 
+function step_nothing!(env; reward = 0)
+    env.reward = reward
+    post_step_updates!(env)
+end
+
 function step_flip!(env, triangle, vertex; no_action_reward = -4)
     pre_step_checks(env, triangle, vertex)
     success = false
