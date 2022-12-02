@@ -1,5 +1,5 @@
 module TriMeshGame
-
+using LinearAlgebra
 
 include("utilities.jl")
 include("mesh.jl")

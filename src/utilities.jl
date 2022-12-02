@@ -52,3 +52,39 @@ function averagesmoothing(points, connectivity, t2t, active_triangles, boundary_
     new_points[:, boundary_nodes] .= points[:, boundary_nodes]
     return new_points
 end
+
+function enclosed_angle(v1,v2)
+    @assert length(v1) == length(v2) == 2
+    dotp = dot(v1,v2)
+    detp = v1[1]*v2[2] - v1[2]*v2[1]
+    rad = atan(detp, dotp)
+    if rad < 0
+        rad += 2pi
+    end
+
+    return rad2deg(rad) 
+end
+
+function get_polygon_interior_angles(p)
+    n = size(p,2)
+    angles = zeros(n)
+    for i = 1:n
+        previ = i == 1 ? n : i -1
+        nexti = i == n ? 1 : i + 1
+
+        v1 = p[:,nexti] - p[:,i]
+        v2 = p[:,previ] - p[:,i]
+        angles[i] = enclosed_angle(v1,v2)
+    end
+    return angles
+end
+
+function get_desired_degree(angle)
+    ndiv = 1
+    err = abs(angle - 60)
+    while err > abs(angle/(ndiv+1) - 60)
+        ndiv += 1
+        err = abs(angle/ndiv - 60) 
+    end
+    return ndiv+1
+end
