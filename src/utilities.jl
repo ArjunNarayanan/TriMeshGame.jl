@@ -8,15 +8,23 @@ function previous(i)
     return ((i + 1) % 3) + 1
 end
 
+function pad(vec::V, num_new_entries, value) where {V <: AbstractVector}
+    return [vec; fill(value, num_new_entries)]
+end
+
 function zero_pad(vec::V, num_new_entries) where {V<:AbstractVector}
     T = eltype(vec)
-    return [vec; zeros(T, num_new_entries)]
+    return pad(vec, num_new_entries, zero(T))
+end
+
+function pad(mat::M, num_new_cols, value) where {M <: AbstractMatrix}
+    nr, _ = size(mat)
+    return [mat fill(value, (nr, num_new_cols))]
 end
 
 function zero_pad(mat::M, num_new_cols) where {M<:AbstractMatrix}
-    nr, nc = size(mat)
     T = eltype(mat)
-    return [mat zeros(T, nr, num_new_cols)]
+    return pad(mat, num_new_cols, zero(T))
 end
 
 function next_cyclic_vertices(v1)

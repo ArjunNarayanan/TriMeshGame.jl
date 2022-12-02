@@ -278,5 +278,4 @@ function reindex!(env::GameEnv)
     vertex_buffer_size = vertex_buffer(env.mesh)
     env.d0 = reindexed_desired_degree(env.d0, new_vertex_indices, vertex_buffer_size)
     env.vertex_score = env.mesh.degrees - env.d0
-    env.edge_pairs = make_edge_pairs(env.mesh)
 end
