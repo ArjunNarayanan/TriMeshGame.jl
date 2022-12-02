@@ -1,6 +1,7 @@
 # TriMeshGame
 
 [![Build Status](https://github.com/ArjunNarayanan/TriMeshGame.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/ArjunNarayanan/TriMeshGame.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![codecov](https://codecov.io/gh/ArjunNarayanan/TriMeshGame.jl/branch/main/graph/badge.svg?token=vUEAq69keD)](https://codecov.io/gh/ArjunNarayanan/TriMeshGame.jl)
 
 Credit to [Per-Olof Persson](persson.berkeley.edu) for giving me the idea and helping me out with this project.
 

@@ -273,6 +273,10 @@ function active_vertex_degrees(mesh)
     return active_degrees(mesh)
 end
 
+function active_vertex_on_boundary(mesh)
+    return mesh.vertex_on_boundary[mesh.active_vertex]
+end
+
 function increment_degree!(mesh::Mesh, vertex_idx)
     @assert is_active_vertex(mesh, vertex_idx)
     mesh.degrees[vertex_idx] += 1
