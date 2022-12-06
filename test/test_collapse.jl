@@ -81,3 +81,21 @@ active_vertex[1] = false
 @test count(mesh.active_vertex) == 7
 degree = [0,3,3,3,3,3,3,6]
 @test allequal(degree, mesh.degrees[1:8])
+
+
+############################################################################################################
+# TEST TRIANGLE INVERTION
+vertices = zeros(2,9)
+connectivity = [1 2 4
+                2 3 5
+                1 4 6
+                4 2 5
+                5 3 8
+                4 5 7
+                6 4 9
+                4 7 9
+                9 7 5
+                5 8 9]
+mesh = TM.Mesh(vertices, connectivity')
+
+@test !TM.is_valid_collapse(mesh, 6, 3)
