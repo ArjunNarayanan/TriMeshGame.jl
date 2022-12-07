@@ -99,3 +99,4 @@ connectivity = [1 2 4
 mesh = TM.Mesh(vertices, connectivity')
 
 @test !TM.is_valid_collapse(mesh, 6, 3)
+@test !TM.is_valid_collapse(mesh, 4, 2)

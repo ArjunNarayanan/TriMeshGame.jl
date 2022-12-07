@@ -18,11 +18,19 @@ function is_valid_collapse(mesh, triangle_idx, vertex_idx; maxdegree = 9)
         return false
     end
 
-    d1, d2, d3 = degree(mesh, v1), degree(mesh, v2), degree(mesh, v3)
+    d1 = degree(mesh, v1)
     if (!vertex_on_boundary(mesh, v1)) && (d1 <= 3)
         return false
     end
 
+    oT1, ol1 = neighbor_triangle(mesh, lv1, triangle_idx), neighbor_twin(mesh, lv1, triangle_idx)
+    ov1 = vertex(mesh, ol1, oT1)
+    od1 = degree(mesh, ov1)
+    if (!vertex_on_boundary(mesh, ov1)) && (od1 <= 3)
+        return false
+    end
+
+    d2, d3 = degree(mesh, v2), degree(mesh, v3)
     new_degree = collapsed_vertex_degree(d2, d3)
     if new_degree > maxdegree
         return false
