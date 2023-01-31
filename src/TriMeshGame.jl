@@ -8,6 +8,7 @@ include("flip.jl")
 include("split.jl")
 include("collapse.jl")
 include("random_actions.jl")
+include("distance_to_boundary.jl")
 include("game_environment.jl")
 
 end

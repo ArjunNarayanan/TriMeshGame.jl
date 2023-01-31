@@ -17,6 +17,10 @@ end
     include("test_collapse.jl")
 end
 
+@testset "Test distance to boundary" begin
+    include("test_distance_to_boundary.jl")
+end
+
 @testset "Test Game Env" begin
     include("test_game_env.jl")
 end
