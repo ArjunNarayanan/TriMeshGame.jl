@@ -37,14 +37,7 @@ mesh = TM.circlemesh(0)
 d0 = TM.active_degrees(mesh)
 TM.split_interior_edge!(mesh, 1, 2)
 push!(d0, 6)
-env = TM.GameEnv(mesh, d0, 10)
+env = TM.GameEnv(mesh, d0)
 
 @test allequal(env.d0[mesh.active_vertex], d0)
 @test allequal(env.vertex_score[mesh.active_vertex], [0, 1, 0, 1, 0, 0, 0, -2])
-@test env.max_actions == 10
-@test env.num_actions == 0
-@test env.initial_score == 4
-@test env.current_score == 4
-@test env.opt_score == 0
-@test env.reward == 0
-@test env.is_terminated == false
