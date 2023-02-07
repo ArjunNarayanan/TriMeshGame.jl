@@ -112,6 +112,10 @@ function GameEnv(mesh0, d0)
     )
 end
 
+function active_vertex_desired_degree(env)
+    return env.d0[env.mesh.active_vertex]
+end
+
 function active_vertex_score(env)
     return env.vertex_score[env.mesh.active_vertex]
 end
@@ -212,8 +216,11 @@ function step_collapse!(env, triangle, vertex_idx)
     if is_valid_collapse(env.mesh, triangle, vertex_idx)
         _, l2, l3 = next_cyclic_vertices(vertex_idx)
         v2, v3 = (vertex(env.mesh, l, triangle) for l in (l2, l3))
-        env.d0[v2] = env.d0[v3]
+        if vertex_on_boundary(env.mesh, v3)
+            env.d0[v2] = env.d0[v3]
+        end
         @assert collapse!(env.mesh, triangle, vertex_idx)
+        env.d0[v3] = 0
         update_env_after_step!(env)
         success = true
     end

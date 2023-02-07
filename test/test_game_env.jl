@@ -41,3 +41,54 @@ env = TM.GameEnv(mesh, d0)
 
 @test allequal(env.d0[mesh.active_vertex], d0)
 @test allequal(env.vertex_score[mesh.active_vertex], [0, 1, 0, 1, 0, 0, 0, -2])
+
+
+
+
+mesh = TM.circlemesh(0)
+d0 = TM.active_degrees(mesh)
+env = TM.GameEnv(mesh, d0)
+TM.step_collapse!(env, 5, 2)
+connectivity = [7 2 3
+                7 3 4
+                7 4 5
+                7 5 6]
+allequal(TM.active_triangle_connectivity(env.mesh), connectivity')
+t2t = [0 2 0
+       0 3 1
+       0 4 2
+       0 0 3]
+allequal(TM.active_triangle_t2t(env.mesh), t2t')
+t2n = [0 3 0
+       0 3 2
+       0 3 2
+       0 0 2]
+allequal(TM.active_triangle_t2n(env.mesh), t2n')
+d0 = [3,3,3,3,3,3]
+allequal(TM.active_vertex_desired_degree(env), d0)
+vs = [-1,0,0,0,-1,+2]
+allequal(TM.active_vertex_score(env), vs)
+
+mesh = TM.circlemesh(0)
+d0 = TM.active_degrees(mesh)
+env = TM.GameEnv(mesh, d0)
+TM.step_collapse!(env, 6, 3)
+connectivity = [1 2 3
+                1 3 4
+                1 4 5
+                1 5 6]
+allequal(TM.active_triangle_connectivity(env.mesh), connectivity')
+t2t = [0 2 0
+       0 3 1
+       0 4 2
+       0 0 3]
+allequal(TM.active_triangle_t2t(env.mesh), t2t')
+t2n = [0 3 0
+       0 3 2
+       0 3 2
+       0 0 2]
+allequal(TM.active_triangle_t2n(env.mesh), t2n')
+d0 = [3,3,3,3,3,3]
+allequal(TM.active_vertex_desired_degree(env), d0)
+vs = [2,-1,0,0,0,-1]
+allequal(TM.active_vertex_score(env), vs)
