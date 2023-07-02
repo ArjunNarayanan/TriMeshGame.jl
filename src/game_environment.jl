@@ -54,6 +54,14 @@ function make_edge_pairs(mesh)
     return pairs
 end
 
+function active_edge_pairs(mesh)
+    t2t = active_t2t(mesh)
+    t2n = active_t2n(mesh)
+    pairs = (t2t .- 1)*3 + t2n
+    pairs[pairs .<= 0] .= 0
+    return vec(pairs)
+end
+
 function cycle_edges(x)
     nf, na = size(x)
     x = reshape(x, nf, 3, :)
