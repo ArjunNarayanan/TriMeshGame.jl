@@ -471,6 +471,7 @@ function reindex_vertices!(mesh)
     mesh.degrees = zero_pad(mesh.degrees[active_verts], num_extra_vertices)    
     mesh.vertex_on_boundary = zero_pad(mesh.vertex_on_boundary[active_verts], num_extra_vertices)
     mesh.active_vertex = zero_pad(trues(num_verts), num_extra_vertices)
+    mesh.new_vertex_pointer = num_verts + 1
 
     return new_vertex_indices
 end
@@ -488,8 +489,8 @@ function reindex_triangles!(mesh)
     
     mesh.connectivity = zero_pad(active_triangle_connectivity(mesh), num_extra_tris)
     mesh.t2n = zero_pad(active_t2n(mesh), num_extra_tris)
-
     mesh.active_triangle = zero_pad(trues(num_tris), num_extra_tris)
+    mesh.new_triangle_pointer = num_tris + 1
 
     return new_triangle_indices
 end

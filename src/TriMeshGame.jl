@@ -3,6 +3,7 @@ using LinearAlgebra
 
 include("utilities.jl")
 include("mesh.jl")
+include("check_valid_mesh.jl")
 include("circlemesh.jl")
 include("flip.jl")
 include("split.jl")
