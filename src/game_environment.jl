@@ -40,6 +40,29 @@ function make_level4_template(mesh)
     return template
 end
 
+function level4_half_edge_template(mesh)
+    pairs = make_edge_pairs(mesh)
+    x = reshape(1:length(pairs), 1, :)
+
+    cx = cycle_edges(x)
+    px = zero_pad(x)[:, pairs]
+
+    cpx = cycle_edges(px)
+    pcpx = zero_pad(cpx)[2:3, pairs]
+
+    cpcpx = cycle_edges(pcpx)
+    pcpcpx = zero_pad(cpcpx)[3:6, pairs]
+
+    cpcpcpx = cycle_edges(pcpcpx)
+    pcpcpcpx = zero_pad(cpcpcpx)[5:12, pairs]
+
+    cpcpcpcpx = cycle_edges(pcpcpcpx)
+
+    template = vcat(cx, cpx, cpcpx, cpcpcpx, cpcpcpcpx)
+    return template
+end
+
+
 function make_edge_pairs(mesh)
     total_nt = triangle_buffer(mesh)
     pairs = zeros(Int, 3total_nt)

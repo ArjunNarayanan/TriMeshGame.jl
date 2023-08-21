@@ -28,11 +28,12 @@ connectivity = [1 2 4
 
 mesh = TM.Mesh(vertices, connectivity')
 fig = plot_mesh(mesh)
-fig
-fig.savefig("examples/paper_figures/flip-0.png")
+fig.tight_layout()
+fig.savefig("examples/paper_figures/flip-0.pdf")
 TM.edgeflip!(mesh, 1, 2)
 fig = plot_mesh(mesh, fontsize = 60, vertex_size = 70)
-fig.savefig("examples/paper_figures/flip-1.png")
+fig.tight_layout()
+fig.savefig("examples/paper_figures/flip-1.pdf")
 ##
 
 ##
@@ -43,10 +44,12 @@ connectivity = [1 2 4
 
 mesh = TM.Mesh(vertices, connectivity')
 fig = plot_mesh(mesh, fontsize = 60, vertex_size = 70)
-fig.savefig("examples/paper_figures/interior-split-0.png")
+fig.tight_layout()
+fig.savefig("examples/paper_figures/interior-split-0.pdf")
 TM.split_interior_edge!(mesh, 1, 2)
 fig = plot_mesh(mesh, fontsize = 60, vertex_size = 70)
-fig.savefig("examples/paper_figures/interior-split-1.png")
+fig.tight_layout()
+fig.savefig("examples/paper_figures/interior-split-1.pdf")
 ##
 
 
@@ -60,9 +63,11 @@ connectivity = [
 ]
 mesh = TM.Mesh(vertices, connectivity)
 fig = plot_mesh(mesh, fontsize = 50, vertex_size = 50)
-fig.savefig("examples/paper_figures/collapse-0.png")
+fig.tight_layout()
+fig.savefig("examples/paper_figures/collapse-0.pdf")
 TM.collapse!(mesh, 4, 2)
 TM.reindex!(mesh)
 fig = plot_mesh(mesh, fontsize = 50, vertex_size=50)
-fig.savefig("examples/paper_figures/collapse-1.png")
+fig.tight_layout()
+fig.savefig("examples/paper_figures/collapse-1.pdf")
 ##

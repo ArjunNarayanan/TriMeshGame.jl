@@ -87,12 +87,12 @@ function get_polygon_interior_angles(p)
     return angles
 end
 
-function get_desired_degree(angle)
-    ndiv = 1
-    err = abs(angle - 60)
-    while err > abs(angle/(ndiv+1) - 60)
-        ndiv += 1
-        err = abs(angle/ndiv - 60) 
-    end
-    return ndiv+1
+function rounded_desired_degree(angle, target_angle)
+    degree = max(round(Int, angle/target_angle + 1), 2)
+    return degree
+end
+
+function continuous_desired_degree(angle, target_angle)
+    degree = max(angle/target_angle + 1.0, 2.0)
+    return degree
 end
